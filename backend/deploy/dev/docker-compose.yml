@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:14.1
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pauline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: pauline
+      POSTGRES_PASSWORD: pauline
+      POSTGRES_DB: pauline
+
+  backend:
+    image: hub.cs.upb.de/pauline/pauline-backend:dev
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      SERVER_NAME: PAULINE
+      SERVER_HOST: https://dev.pauline-upb.de
+      BACKEND_CORS_ORIGINS: '["https://dev.pauline-upb.de","http://localhost:3000"]'
+      PROJECT_NAME: PAULINE
+      POSTGRES_SERVER: db
+      POSTGRES_USER: pauline
+      POSTGRES_PASSWORD: pauline
+      POSTGRES_DB: pauline
+      REVISION: "3"
+      API_KEYS: '["REDACTED_API_KEY_1","REDACTED_API_KEY_2"]'
+
+  frontend:
+    image: hub.cs.upb.de/pauline/pauline-frontend:dev
+    restart: always
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      # VITE_PAULINE_API is a build-time arg baked into the JS bundle; runtime env has no effect
+      GITLAB_TOKEN: REDACTED_GITLAB_TOKEN

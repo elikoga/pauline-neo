@@ -1,0 +1,287 @@
+import { writable, derived } from 'svelte/store';
+import type { Appointment, AppointmentCollection } from './api';
+import { DateTime } from 'luxon';
+import { colorCount, colors } from '$lib/colors';
+import { writableLocalStorageStore } from './localStorageStore';
+import { fromISO } from './fromISOcache';
+
+export const realAppointments = writableLocalStorageStore<AppointmentCollection[]>(
+  'appointments',
+  0,
+  []
+);
+
+let realAppointmentsHistory: AppointmentCollection[][] = [];
+let redoHistory: AppointmentCollection[][] = [];
+
+const UNDOHISTORYLIMIT = 50;
+
+realAppointments.subscribe(($realAppointments) => {
+  realAppointmentsHistory = [...realAppointmentsHistory, $realAppointments].slice(
+    -UNDOHISTORYLIMIT
+  );
+  redoHistory = [];
+});
+
+export const undo = (): void => {
+  const current = realAppointmentsHistory.pop();
+  const last = realAppointmentsHistory.pop();
+  if (current && last) {
+    const oldRedoHistory = redoHistory;
+    realAppointments.set(last);
+    redoHistory = [...oldRedoHistory, current];
+  } else {
+    last && realAppointmentsHistory.push(last);
+    current && realAppointmentsHistory.push(current);
+  }
+};
+
+export const redo = (): void => {
+  const last = redoHistory.pop();
+  if (last) {
+    const oldRedoHistory = redoHistory;
+    realAppointments.set(last);
+    redoHistory = oldRedoHistory;
+  }
+};
+
+export const previewAppointments = writable<AppointmentCollection[]>([]);
+
+const appointments = derived<
+  [typeof realAppointments, typeof previewAppointments],
+  AppointmentCollection[]
+>([realAppointments, previewAppointments], ([$realAppointments, $previewAppointments]) => [
+  ...$realAppointments,
+  ...$previewAppointments
+]);
+
+export const startDate = writable<DateTime>(fromISO('2022-10-17T07:00'));
+
+export const dates = writable<DateTime[]>([]);
+
+export type AnnotatedAppointment = Appointment & {
+  name: string;
+  collection: AppointmentCollection;
+};
+
+const appointmentsFilteredByDate = derived<
+  [typeof appointments, typeof dates],
+  AnnotatedAppointment[]
+>([appointments, dates], ([$appointments, $dates]) => {
+  return $appointments.flatMap((appointmentCollection) => {
+    return appointmentCollection.appointments
+      .filter((appointment) => {
+        // appointment.start_time is a string in the format "2020-09-01T12:00:00.000Z"
+        // it should be converted to a Date object
+        // then check if the day of the appointment is the same as the day of any of the dates
+        const appointmentDate = fromISO(appointment.start_time);
+        return $dates.some(
+          (date) =>
+            // same year, same month, same day
+            date.year === appointmentDate.year &&
+            date.month === appointmentDate.month &&
+            date.day === appointmentDate.day
+        );
+      })
+      .map((appointment) => ({
+        name: appointmentCollection.name,
+        collection: appointmentCollection,
+        ...appointment
+      }));
+  });
+});
+
+const permanentTimes = [
+  '09:00', // usual start time
+  '13:00', // start time for lunch
+  '14:00', // end time for lunch
+  '18:00' // usual end time
+];
+
+const relevantTimes = derived<typeof appointmentsFilteredByDate, string[]>(
+  appointmentsFilteredByDate,
+  (appointments) =>
+    [
+      ...new Set(
+        appointments
+          .flatMap((appointment) =>
+            [appointment.start_time, appointment.end_time].map((time) => {
+              const date = fromISO(time);
+              return date.toLocaleString(DateTime.TIME_24_SIMPLE);
+            })
+          )
+          .concat(permanentTimes)
+      )
+    ].sort()
+);
+
+export const relevantTimeSlots = derived<typeof relevantTimes, string[]>(relevantTimes, (times) => {
+  // from [08:00, 09:00, 10:00, ...]
+  // generate [08:00-09:00, 09:00-10:00, 10:00-...]
+  return times.reduce((acc, time, index) => {
+    const nextTime = times[index + 1];
+    if (nextTime) {
+      acc.push(`${time}-${nextTime}`);
+    }
+    return acc;
+  }, [] as string[]);
+});
+
+export const howManyAppointmentsOverlap = derived<
+  [typeof dates, typeof appointmentsFilteredByDate, typeof relevantTimeSlots],
+  Record<string /* dates */, number /* appointments that overlap */>
+>(
+  [dates, appointmentsFilteredByDate, relevantTimeSlots],
+  ([$dates, $appointmentsFilteredByDate, $relevantTimeSlots]) => {
+    // for each date, for each time slot, count how many appointments overlap
+    // return the maximum for each date
+    return $dates.reduce((acc, date) => {
+      const dateString = /* iso year-month-day */ date.toISODate();
+      const appointments = $appointmentsFilteredByDate.filter((appointment) => {
+        // appointment.start_time is a string in the format "2020-09-01T12:00:00.000Z"
+        // it should be converted to a Date object
+        // then check if the day of the appointment is the same as the day of any of the dates
+        const appointmentDate = fromISO(appointment.start_time);
+        return appointmentDate.toISODate() === dateString;
+      });
+      // timeslots may overlap weirdly so:
+      // 11-13
+      // 12-14
+      // overlaps ( from 12-14 ).
+
+      const timeSlotCounts = $relevantTimeSlots.map((timeSlot) => {
+        const [startTime, endTime] = timeSlot.split('-');
+        const startTimeDate = fromISO(`${dateString}T${startTime}:00.000`);
+        const endTimeDate = fromISO(`${dateString}T${endTime}:00.000`);
+        const timeslotInterval = startTimeDate.until(endTimeDate);
+        const appointmentsOverlappingTimeSlot = appointments.filter((appointment) => {
+          const appointmentStartTimeDate = fromISO(appointment.start_time);
+          const appointmentEndTimeDate = fromISO(appointment.end_time);
+          const appointmentInterval = appointmentStartTimeDate.until(appointmentEndTimeDate);
+          return appointmentInterval.overlaps(timeslotInterval);
+        });
+        return appointmentsOverlappingTimeSlot.length;
+      });
+      acc[dateString] = Math.max(0, ...timeSlotCounts);
+      return acc;
+    }, {} as Record<string /* dates */, number /* appointments that overlap */>);
+  }
+);
+
+type TimeTable = {
+  [date: string]: {
+    [timeSlot: string]: (
+      | {
+        empty: false;
+        appointment: AnnotatedAppointment;
+        rowSpan: number;
+      }
+      | { empty: true; filler: boolean }
+    )[];
+  };
+};
+
+export const timeTable = derived<
+  [typeof dates, typeof appointmentsFilteredByDate, typeof relevantTimeSlots],
+  TimeTable
+>(
+  [dates, appointmentsFilteredByDate, relevantTimeSlots],
+  ([$dates, $appointmentsFilteredByDate, $relevantTimeSlots]) => {
+    // iteratively build the time table
+    // go through each appointment
+    // and pop it into the time table
+    // update the colSpan and rowSpan of other appointments
+
+    const timeTable: TimeTable = {};
+    $dates.forEach((date) => {
+      timeTable[date.toISODate()] = {};
+    });
+
+    $appointmentsFilteredByDate.forEach((appointment) => {
+      const dateString = fromISO(appointment.start_time).toISODate();
+      const startTimeStamp = fromISO(appointment.start_time).toLocaleString(
+        DateTime.TIME_24_SIMPLE
+      );
+      const endTimeStamp = fromISO(appointment.end_time).toLocaleString(DateTime.TIME_24_SIMPLE);
+      const startTimeSlot = $relevantTimeSlots.find((timeSlot) => {
+        const [startTime] = timeSlot.split('-');
+        return startTime === startTimeStamp;
+      });
+      const endTimeSlot = $relevantTimeSlots.find((timeSlot) => {
+        const [, endTime] = timeSlot.split('-');
+        return endTime === endTimeStamp;
+      });
+      if (!startTimeSlot || !endTimeSlot) {
+        return;
+      }
+      const startTimeSlotIndex = $relevantTimeSlots.indexOf(startTimeSlot);
+      const endTimeSlotIndex = $relevantTimeSlots.indexOf(endTimeSlot);
+      const rowSpan = endTimeSlotIndex - startTimeSlotIndex + 1;
+      const timeTableCol = timeTable[dateString];
+      if (!timeTableCol) {
+        return;
+      }
+      if (!timeTableCol[startTimeSlot]) {
+        timeTableCol[startTimeSlot] = [];
+      }
+      const timeTableRow = timeTableCol[startTimeSlot];
+      timeTableRow.push({
+        empty: false,
+        appointment,
+        rowSpan
+      });
+      // for each other time slot, push with empty
+      for (let i = startTimeSlotIndex + 1; i <= endTimeSlotIndex; i++) {
+        const timeSlot = $relevantTimeSlots[i];
+        if (!timeTableCol[timeSlot]) {
+          timeTableCol[timeSlot] = [];
+        }
+        const timeTableRow = timeTableCol[timeSlot];
+        timeTableRow.push({
+          empty: true,
+          filler: false
+        });
+      }
+    });
+    // for each row that is not full, fill it with empty
+    $relevantTimeSlots.forEach((timeSlot) => {
+      $dates.forEach((date) => {
+        const dateString = date.toISODate();
+        const timeTableCol = timeTable[dateString];
+        if (!timeTableCol) {
+          throw new Error('timeTableCol is undefined');
+        }
+        if (!timeTableCol[timeSlot]) {
+          timeTableCol[timeSlot] = [];
+        }
+        const timeTableRow = timeTableCol[timeSlot];
+        // overlaps is max appointments at each timeslot for that date
+        const overlaps = Math.max(
+          ...$relevantTimeSlots.map((timeSlot) => {
+            const appointments = (timeTableCol[timeSlot] ?? []).filter((appointment) => {
+              return appointment;
+            });
+            return appointments.length;
+          })
+        );
+        const missing = overlaps - timeTableRow.length;
+        for (let i = 0; i < missing; i++) {
+          timeTableRow.push({
+            empty: true,
+            filler: true
+          });
+        }
+      });
+    });
+    return timeTable;
+  }
+);
+
+export const getAppointmentsColor = derived<
+  typeof appointments,
+  (appointment: AppointmentCollection) => string[]
+>(appointments, ($appointments) => (appointmentCollection: AppointmentCollection) => {
+  const uniqueCids = [...new Set($appointments.map((appointment) => appointment.cid))];
+  const index = uniqueCids.indexOf(appointmentCollection.cid);
+  return colors[index % colorCount] ?? ['#000', '#000'];
+});

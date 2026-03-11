@@ -1,0 +1,28 @@
+/* Write your global styles here, in PostCSS syntax */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: hsl(212, 41%, 25%);
+  --secondary: hsl(212, 31%, 62%);
+  --background: #222;
+  --link: hsl(202, 83%, 45%);
+  --text: rgb(209, 209, 209);
+  --header-height: 50px;
+  color-scheme: dark;
+}
+
+a {
+  color: var(--link);
+  font-weight: bold;
+}
+
+* {
+  color: var(--text);
+}
+
+body {
+  background-color: var(--background);
+  min-height: 100vh;
+}
