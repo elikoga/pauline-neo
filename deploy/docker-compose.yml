@@ -1,0 +1,72 @@
+# Server-side infrastructure for pauline-neo.
+#
+# Layout
+# ──────
+#   traefik       HTTP-only reverse proxy on 127.0.0.1:8080.
+#                 NixOS nginx proxies *.PREVIEW_DOMAIN here.
+#                 Routes to ephemeral preview containers by Host header.
+#
+#   pauline-prod  Production app on 127.0.0.1:8000.
+#                 NixOS nginx proxies the main domain here.
+#                 Restarted in-place by deploy-prod.sh (image pull + up --no-deps).
+#
+# Required .env on the server (keep out of VCS):
+#   PREVIEW_DOMAIN=preview.pauline.example.com
+#   POSTGRES_SERVER=...
+#   POSTGRES_USER=pauline
+#   POSTGRES_PASSWORD=...
+#   POSTGRES_DB=pauline
+#   BASE_URL=https://pauline.example.com
+#
+# NixOS nginx hints
+# ─────────────────
+# Wildcard TLS via security.acme (DNS-01 challenge needed for wildcards):
+#
+#   services.nginx.virtualHosts."${PREVIEW_DOMAIN}" = {
+#     serverName = "*.${PREVIEW_DOMAIN}";
+#     forceSSL = true; useACMEHost = "wildcard-preview";
+#     locations."/" = { proxyPass = "http://127.0.0.1:8080"; proxyWebsockets = true; };
+#   };
+#   services.nginx.virtualHosts."pauline.example.com" = {
+#     forceSSL = true; enableACME = true;
+#     locations."/" = { proxyPass = "http://127.0.0.1:8000"; proxyWebsockets = true; };
+#   };
+
+services:
+  traefik:
+    image: traefik:v3
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=pauline
+      - --entrypoints.web.address=:8080
+      - --api.dashboard=false
+      - --log.level=INFO
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - pauline
+
+  pauline-prod:
+    image: ghcr.io/elikoga/pauline-neo:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - POSTGRES_SERVER=${POSTGRES_SERVER}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - BASE_URL=${BASE_URL}
+      - API_V1_STR=/api/v1
+      - PROJECT_NAME=PAULINE
+      - API_KEYS=[]
+    networks:
+      - pauline
+
+networks:
+  pauline:
+    name: pauline

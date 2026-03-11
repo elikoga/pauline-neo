@@ -1,0 +1,11 @@
+.git
+**/__pycache__
+**/.venv
+**/node_modules
+frontend/.svelte-kit
+frontend/build
+backend/.env
+scraper/target
+data/
+deploy/
+.github/
