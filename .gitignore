@@ -19,3 +19,7 @@ scraper/.api_key
 
 # General
 .DS_Store
+
+
+# DB dumps (local only — copy via: scp brickfire.eu:~/pauline-dump.sql data/pauline-dump.sql)
+data/
