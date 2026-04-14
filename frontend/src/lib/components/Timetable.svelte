@@ -19,9 +19,14 @@
   $startDate = $startDate;
   $: $dates = [...Array(5).keys()].map((i) => $startDate.plus({ days: i }));
 
-  const getTimeTable = (date: DateTime, timeSlot: string) => {
-    const result = $timeTable[date.toISODate()][timeSlot];
-    return result ?? [];
+  // slotKey gives Svelte a stable identity for each slot so components are
+  // properly destroyed/created instead of being reused by position.
+  // Empty/filler slots have no meaningful identity so they use their index.
+  const slotKey = (slot: { empty: boolean; filler?: boolean; appointment?: unknown }, i: number): string => {
+    if (slot.empty) return `e:${i}`;
+    const c = (slot as { empty: false; appointment: { collection: { cid: string; name: string }; start_time: string } }).appointment.collection;
+    const s = (slot as { empty: false; appointment: { start_time: string } }).appointment.start_time;
+    return `a:${c.cid}:${c.name}:${s}`;
   };
 
   let theTable: HTMLTableElement;
@@ -69,7 +74,7 @@
         <tr>
           <td class="timefield">{timeSlot.replace('-', ' - ')}</td>
           {#each $dates as date}
-            {#each getTimeTable(date, timeSlot) as slot}
+            {#each ($timeTable[date.toISODate()]?.[timeSlot] ?? []) as slot, _slotIdx (slotKey(slot, _slotIdx))}
               {#if slot.empty}
                 {#if slot.filler}
                   <td class="placeholder" rowspan="1"><!--1--></td>

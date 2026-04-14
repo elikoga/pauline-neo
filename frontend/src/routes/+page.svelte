@@ -1,8 +1,8 @@
 <script lang="ts">
   import Timetable from '$lib/components/Timetable.svelte';
   import Search from '$lib/components/Search.svelte';
-  import { writable } from 'svelte/store';
-  import { setContext } from 'svelte';
+  import { writable, get } from 'svelte/store';
+  import { setContext, onMount } from 'svelte';
   import Button from '$lib/components/Button.svelte';
   import { modalStore } from '$lib/modal';
   import Modal from 'svelte-simple-modal';
@@ -10,11 +10,48 @@
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
-  import { undo, redo } from '$lib/appointments';
+  import { undo, redo, realAppointments } from '$lib/appointments';
+  import { cacheVersion, tryAutoReplaceAppointments } from '$lib/api';
+  import type { AppointmentCollection } from '$lib/api';
+  import { browser } from '$app/environment';
   import SemesterSelector from '$lib/components/SemesterSelector.svelte';
 
   const appointments = writable([]);
   setContext('appointments', appointments);
+
+  // Heal stale appointments (CID changed due to scraper hash updates) by finding
+  // the unambiguous replacement.  Runs once on mount (to fix data from localStorage)
+  // and again after every cache bust (so freshly scraped data is used).
+  const runAutoReplace = async () => {
+    if (!browser) return;
+    const snapshot = get(realAppointments);
+    if (snapshot.length === 0) return;
+    const updated = await tryAutoReplaceAppointments(snapshot);
+    // Build a map of identity-key -> replacement for items that actually changed.
+    // We key by cid+name (same as appointmentCollectionEquals) so the lookup is
+    // consistent with how the store identifies collections.
+    const replacements = new Map<string, AppointmentCollection>();
+    for (let i = 0; i < snapshot.length; i++) {
+      if (updated[i] !== snapshot[i]) {
+        replacements.set(`${snapshot[i].cid}\x00${snapshot[i].name}`, updated[i]);
+      }
+    }
+    if (replacements.size === 0) return; // nothing changed, don't touch the store
+    // Apply only the replacements to the CURRENT store state so that any
+    // add/remove the user did while we were awaiting is preserved.
+    realAppointments.update((current) =>
+      current.map((a) => replacements.get(`${a.cid}\x00${a.name}`) ?? a)
+    );
+  };
+
+  onMount(runAutoReplace);
+
+  // Re-run after each cache bust so newly fetched data can heal any remaining
+  // stale appointments that weren't replaced on the initial load.
+  cacheVersion.subscribe((version) => {
+    if (!browser || version === 0) return;
+    runAutoReplace();
+  });
 
   let sidebarOpen = false;
   let sidebarLocked = false;

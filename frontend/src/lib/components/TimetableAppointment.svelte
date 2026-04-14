@@ -8,6 +8,18 @@
 
   import { realAppointments, getAppointmentsColor } from '$lib/appointments';
   import { appointmentCollectionEquals } from '$lib/appointmentCollection';
+  import { freshCourseCids } from '$lib/api';
+
+  // True when at least one semester's fresh data has been loaded AND the
+  // appointment's CID is absent from every semester we've fetched.
+  // Checking all fetched semesters prevents false positives when the user
+  // switches semesters — an appointment from semester A stays valid even
+  // after semester B's courses are loaded.
+  $: broken =
+    Object.keys($freshCourseCids).length > 0 &&
+    !Object.values($freshCourseCids).some((s) =>
+      s.has(timetableSlot.appointment.collection.cid)
+    );
 
   $: color = $getAppointmentsColor(timetableSlot.appointment.collection);
 
@@ -36,13 +48,16 @@
 
 <td
   on:click={openModal}
-  class="coursefield text-xs text-center break-words"
+  class="coursefield text-xs text-center break-words {broken ? 'broken' : ''}"
   rowspan={timetableSlot.rowSpan}
   style="--dark-color: {color[0]}; --light-color: {color[1]};"
 >
   <button class="button remove-button inline lg:hidden" on:click|stopPropagation={removeAppointment}
     >x</button
   >
+  {#if broken}
+    <span class="broken-icon" title="Termindaten veraltet – dieser Kurs wurde vom System aktualisiert und konnte nicht automatisch ersetzt werden">⚠</span>
+  {/if}
   {timetableSlot.appointment.name}
 </td>
 
@@ -74,5 +89,17 @@
     background-color: rgba(70, 70, 70, 0.7);
     right: 0;
     top: 0;
+  }
+  .broken {
+    outline: 2px solid #f59e0b;
+    outline-offset: -2px;
+  }
+
+  .broken-icon {
+    display: block;
+    font-size: 1rem;
+    color: #f59e0b;
+    line-height: 1;
+    margin-bottom: 2px;
   }
 </style>

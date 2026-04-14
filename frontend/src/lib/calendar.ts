@@ -78,7 +78,7 @@ export const importCalendar = async (): Promise<void> => {
   const calendar = ical.parse(data);
   // console.log(calendar);
   let appointmentsJson = (calendar[1] as unknown[][]).find(
-    (attribute: unknown[]) => attribute[0] === 'x-pauline-appointments'
+    (attribute: unknown[]) => attribute[0] === 'x-paulo-appointments'
   )?.[3] as string | undefined;
   if (typeof appointmentsJson !== 'string') {
     throw new Error('No appointments found');

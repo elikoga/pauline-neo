@@ -1,7 +1,7 @@
 <script lang="ts">
   import Appointments from './AppointmentCollection.svelte';
   import type { CourseWithoutAppointments, CourseWithSmallGroupBackrefs } from '$lib/api';
-  import { getCourse } from '$lib/api';
+  import { getCourse, bustCache } from '$lib/api';
   import AppointmentHeadline from './AppointmentHeadline.svelte';
 
   export let courseInfo: CourseWithoutAppointments | undefined;
@@ -9,14 +9,24 @@
 
   export let open = false;
   let loading = false;
+  let stale = false; // true when getCourse failed due to a stale cached CID
 
   $: (async () => {
     if (open) {
-      // console.log('current course:', courseInfo);
-
       loading = true;
-      courseData = courseInfo && (await getCourse(courseInfo?.cid));
-      loading = false;
+      stale = false;
+      try {
+        courseData = courseInfo && (await getCourse(courseInfo?.cid));
+      } catch (_err) {
+        // The CID in the local cache no longer exists on the server.
+        // Bust the cache so the search re-fetches fresh data, then close.
+        courseData = undefined;
+        stale = true;
+        open = false;
+        bustCache();
+      } finally {
+        loading = false;
+      }
     }
   })();
 
@@ -39,6 +49,8 @@
     <span class="title text-link">{splitStuff(courseInfo?.cid)}: {courseInfo?.name}</span>
     {#if loading}
       <span class="loading">Loading...</span>
+    {:else if stale}
+      <span class="stale" title="Kursdaten veraltet – Cache wurde geleert, bitte erneut laden">⚠ veraltet</span>
     {/if}
   </summary>
   {#if open && courseData}
@@ -87,5 +99,10 @@
 
   .data {
     padding: 10px;
+  }
+  .stale {
+    color: #f59e0b; /* amber */
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
   }
 </style>

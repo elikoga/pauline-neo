@@ -283,5 +283,9 @@ export const getAppointmentsColor = derived<
 >(appointments, ($appointments) => (appointmentCollection: AppointmentCollection) => {
   const uniqueCids = [...new Set($appointments.map((appointment) => appointment.cid))];
   const index = uniqueCids.indexOf(appointmentCollection.cid);
-  return colors[index % colorCount] ?? ['#000', '#000'];
+  // indexOf returns -1 when the collection is being removed from the store but the
+  // component hasn't been destroyed yet.  Avoid negative modulo (which yields -1 in
+  // JS and falls through to the black fallback) by clamping to 0.
+  const safeIndex = index >= 0 ? index : 0;
+  return colors[safeIndex % colorCount] ?? ['#000', '#000'];
 });

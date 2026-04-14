@@ -1,6 +1,7 @@
 import { makeAvaliableJsonStringifyMap, makeAvaliableMap } from './LocalStorageMap';
 
 import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
 import { writableLocalStorageStore } from './localStorageStore';
 
 export const semesterNameStore = writableLocalStorageStore('semesterName', 100, 'Sommer 2022');
@@ -102,7 +103,9 @@ export const getCourses = async (signal?: AbortSignal): Promise<CourseWithoutApp
   const cacheKey = { semesterId };
   console.log(`Getting courses for semester ${semesterId}, name ${semesterName}`);
   if (searchResultsCache.has(cacheKey)) {
-    return (searchResultsCache.get(cacheKey) as string[])
+    const cids = searchResultsCache.get(cacheKey) as string[];
+    freshCourseCids.update((prev) => ({ ...prev, [semesterName]: new Set(cids) }));
+    return cids
       .map((cid) => cidCoursesCache.get({ cid, semesterName }))
       .flatMap((x) => (x ? [x] : []));
   }
@@ -131,6 +134,10 @@ export const getCourses = async (signal?: AbortSignal): Promise<CourseWithoutApp
     cacheKey,
     courses.map((course: CourseWithoutAppointments) => course.cid)
   );
+  freshCourseCids.update((prev) => ({
+    ...prev,
+    [semesterName]: new Set(courses.map((c: CourseWithoutAppointments) => c.cid))
+  }));
   return courses;
 };
 
@@ -162,11 +169,7 @@ export const getCourse = async (course_id: string): Promise<CourseWithSmallGroup
 };
 
 semesterNameStore.subscribe(async () => {
-  // This callback syncs semesterId with the store value.
-  // It must not run on the server: getSemesters() returns [] there,
-  // and localStorage stores are meaningless outside a browser anyway.
-  if (!browser) return;
-
+  // const cachedId = semesterIdCache.get(semesterName);
   const cachedId = semesterResponse?.find((semester) => semester.name === semesterName)?.id;
   if (cachedId) {
     semesterId = cachedId;
@@ -174,19 +177,28 @@ semesterNameStore.subscribe(async () => {
     const semesters = await getSemesters();
     const semester = semesters.find((s) => s.name === semesterName);
     if (!semester) {
-      // Stale localStorage value — migrate to the newest available semester.
-      // getSemesters() already sets semesterNameStore, which re-triggers this callback.
-      semesterNameStore.set(semesters[semesters.length - 1].name);
-      return;
+      throw new Error(`Semester ${semesterName} not found`);
     }
     semesterId = semester.id;
   }
 });
 
+// Incremented every time the API cache is busted. Consumers can subscribe to
+// re-run any work that depended on now-stale cached data.
+export const cacheVersion = writable(0);
+
+// Maps semester name → the set of CIDs returned by the most recent getCourses()
+// call for that semester.  Accumulates across semester switches so that
+// appointments from any previously-visited semester are not falsely flagged.
+// Cleared on cache bust.
+export const freshCourseCids = writable<Record<string, Set<string>>>({});
+
 export const bustCache = (): void => {
   searchResultsCache.clear();
   cidCoursesCache.clear();
   courseCache.clear();
+  freshCourseCids.set({}); // cleared until next getCourses() call
+  cacheVersion.update((v) => v + 1);
 };
 
 export type SemesterWithoutCoursesButId = {
@@ -234,4 +246,59 @@ export type ValidationError = {
   loc: string;
   msg: string;
   type: string;
+};
+
+
+// Returns the "base" part of a CID: the portion before the '|' separator that
+// was introduced to disambiguate courses sharing the same university ID.
+// For old-format CIDs that lack a '|' the whole string is returned.
+export const getBaseId = (cid: string): string => cid.split('|')[0];
+
+// Attempts to find a single unambiguous replacement for a stale AppointmentCollection
+// whose CID no longer exists in the current semester's fresh data.
+// Returns the replacement, or null when there are zero or more than one candidates
+// (ambiguous — caller should keep the original and surface a broken indicator).
+export const tryReplaceStaleAppointment = async (
+  stale: AppointmentCollection
+): Promise<AppointmentCollection | null> => {
+  const courses = await getCourses();
+  const staleBase = getBaseId(stale.cid);
+
+  if ('description' in stale) {
+    // Full course: match by base ID AND exact course name so we can be certain.
+    const candidates = courses.filter(
+      (c) => getBaseId(c.cid) === staleBase && c.name === stale.name
+    );
+    if (candidates.length !== 1) return null; // 0 = gone, >1 = ambiguous
+    return getCourse(candidates[0].cid);
+  } else {
+    // SmallGroupBackref: stale.cid is the COURSE's cid; stale.name is the group name.
+    // Find courses with the same base course ID, then look for the matching group.
+    const courseCandidates = courses.filter((c) => getBaseId(c.cid) === staleBase);
+    const matches: SmallGroupBackref[] = [];
+    for (const candidate of courseCandidates) {
+      const full = await getCourse(candidate.cid);
+      const group = full.small_groups.find((g) => g.name === stale.name);
+      if (group) matches.push(group as SmallGroupBackref);
+    }
+    if (matches.length !== 1) return null; // 0 = gone, >1 = ambiguous
+    return matches[0];
+  }
+};
+
+// Runs over a list of stored appointments and replaces any whose CID is no longer
+// in the fresh course data, provided there is exactly one unambiguous replacement.
+// Appointments that can't be matched are left unchanged (caller shows broken icon).
+export const tryAutoReplaceAppointments = async (
+  appointments: AppointmentCollection[]
+): Promise<AppointmentCollection[]> => {
+  const courses = await getCourses();
+  const freshCids = new Set(courses.map((c) => c.cid));
+  return Promise.all(
+    appointments.map(async (appointment) => {
+      if (freshCids.has(appointment.cid)) return appointment;
+      const replacement = await tryReplaceStaleAppointment(appointment);
+      return replacement ?? appointment;
+    })
+  );
 };

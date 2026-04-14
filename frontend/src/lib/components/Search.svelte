@@ -2,7 +2,7 @@
   import pkg from 'flexsearch';
 
   const { Document } = pkg;
-  import { semesterNameStore, type CourseWithoutAppointments } from '$lib/api';
+  import { semesterNameStore, type CourseWithoutAppointments, cacheVersion } from '$lib/api';
   import { getCourses, cidCoursesCache } from '$lib/api';
   import Course from './Course.svelte';
   import { onMount } from 'svelte';
@@ -24,14 +24,22 @@
     });
 
   const localIndexCache = new Map<string, pkg.Document<unknown, false>>();
+  // Records the cacheVersion at which each semester's index was last built.
+  const localIndexBuiltAtVersion = new Map<string, number>();
 
   $: localIndexPopulatedPromise = (async () => {
-    // check if semesterStore is populated already
+    // Re-run whenever the semester changes OR the cache is busted.
+    // Reading $cacheVersion here registers it as a reactive dependency.
+    const _version = $cacheVersion;
     if (!$semesterNameStore) {
-      // this is a failure
       return;
     }
-    // check if we have a local index for this semester
+    // Invalidate the in-memory index only if it was built before this version,
+    // so a cache bust forces a rebuild without affecting unrelated semester changes.
+    const builtAt = localIndexBuiltAtVersion.get($semesterNameStore) ?? -1;
+    if (builtAt < _version) {
+      localIndexCache.delete($semesterNameStore);
+    }
     if (localIndexCache.has($semesterNameStore)) {
       return localIndexCache.get($semesterNameStore);
     }
@@ -41,15 +49,13 @@
     await getCourses();
     await Promise.all(
       [...cidCoursesCache.entries()].map(([{ semesterName }, course]) => {
-        // if the semesterName fits, add it to the index
         if (semesterName === $semesterNameStore) {
           index.add(course);
         }
       })
     );
-    // save the index to the cache
     localIndexCache.set($semesterNameStore, index);
-    // set the local index to the new index
+    localIndexBuiltAtVersion.set($semesterNameStore, _version);
     return index;
   })();
 
