@@ -23,8 +23,6 @@
             export PAULINE_DEV_SHELL=true
             export PAULINE_FLAKE_ROOT=$(git rev-parse --show-toplevel)
             alias run-dev="(cd $PAULINE_FLAKE_ROOT/backend && uv run uvicorn app.api:app --reload --host 127.0.0.1 --port 8000)"
-            alias setup-db="bash $PAULINE_FLAKE_ROOT/scripts/dev-setup.sh"
-            echo "setup-db  — load prod dump into local postgres (run once, or after 'docker compose down -v')"
             echo "run-dev   — start backend + proxied frontend on :8000"
           '';
         };
