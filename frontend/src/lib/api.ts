@@ -169,6 +169,11 @@ export const getCourse = async (course_id: string): Promise<CourseWithSmallGroup
 };
 
 semesterNameStore.subscribe(async () => {
+  // This callback syncs semesterId with the store value.
+  // Must not run on the server: getSemesters() returns [] there,
+  // and localStorage stores are meaningless outside a browser anyway.
+  if (!browser) return;
+
   // const cachedId = semesterIdCache.get(semesterName);
   const cachedId = semesterResponse?.find((semester) => semester.name === semesterName)?.id;
   if (cachedId) {
@@ -177,7 +182,10 @@ semesterNameStore.subscribe(async () => {
     const semesters = await getSemesters();
     const semester = semesters.find((s) => s.name === semesterName);
     if (!semester) {
-      throw new Error(`Semester ${semesterName} not found`);
+      // Stale localStorage value — migrate to the newest available semester.
+      // getSemesters() already sets semesterNameStore, which re-triggers this callback.
+      semesterNameStore.set(semesters[semesters.length - 1].name);
+      return;
     }
     semesterId = semester.id;
   }
