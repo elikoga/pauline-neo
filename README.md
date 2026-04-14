@@ -3,14 +3,27 @@
 ## Prerequisites
 
 - Nix with flakes enabled
-- A running PostgreSQL instance with the Pauline DB (see `backend/.env.sample`)
 
 ## Setup
 
 ```sh
 cp backend/.env.sample backend/.env
-# edit backend/.env — set POSTGRES_* to match your local DB
+# edit backend/.env if needed (defaults match the DB setup below)
 cd backend && uv sync
+```
+
+### Database
+
+You need a PostgreSQL instance with the Pauline DB loaded. Ask Eli for the dump file, then:
+
+```sh
+# Copy dump into place (gitignored)
+cp /path/to/pauline-dump.sql data/pauline-dump.sql
+
+# Start a local postgres and load the dump
+# (adjust PGUSER/PGPASSWORD/PGDATABASE to match backend/.env)
+createdb pauline
+psql pauline < data/pauline-dump.sql
 ```
 
 ## Run
