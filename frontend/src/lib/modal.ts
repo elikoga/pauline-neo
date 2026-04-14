@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { ComponentType } from 'svelte';
+import type { SvelteComponent } from 'svelte';
 
-export const modalStore = writable<ComponentType | null>(null);
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const modalStore = writable<typeof SvelteComponent<any> | null>(null);

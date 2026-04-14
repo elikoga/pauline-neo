@@ -4,6 +4,11 @@ import { DateTime } from 'luxon';
 import { colorCount, colors } from '$lib/colors';
 import { writableLocalStorageStore } from './localStorageStore';
 import { fromISO } from './fromISOcache';
+import type { Interval } from 'luxon';
+
+// toISODate() returns string|null in Luxon 3; all dates here are constructed from
+// known-valid ISO strings so the non-null assertion is always safe.
+const isoDate = (dt: ReturnType<typeof fromISO>): string => dt.toISODate()!;
 
 export const realAppointments = writableLocalStorageStore<AppointmentCollection[]>(
   'appointments',
@@ -136,13 +141,13 @@ export const howManyAppointmentsOverlap = derived<
     // for each date, for each time slot, count how many appointments overlap
     // return the maximum for each date
     return $dates.reduce((acc, date) => {
-      const dateString = /* iso year-month-day */ date.toISODate();
+      const dateString = isoDate(date);
       const appointments = $appointmentsFilteredByDate.filter((appointment) => {
         // appointment.start_time is a string in the format "2020-09-01T12:00:00.000Z"
         // it should be converted to a Date object
         // then check if the day of the appointment is the same as the day of any of the dates
         const appointmentDate = fromISO(appointment.start_time);
-        return appointmentDate.toISODate() === dateString;
+        return isoDate(appointmentDate) === dateString;
       });
       // timeslots may overlap weirdly so:
       // 11-13
@@ -158,7 +163,7 @@ export const howManyAppointmentsOverlap = derived<
           const appointmentStartTimeDate = fromISO(appointment.start_time);
           const appointmentEndTimeDate = fromISO(appointment.end_time);
           const appointmentInterval = appointmentStartTimeDate.until(appointmentEndTimeDate);
-          return appointmentInterval.overlaps(timeslotInterval);
+          return (appointmentInterval as Interval<true>).overlaps(timeslotInterval as Interval<true>);
         });
         return appointmentsOverlappingTimeSlot.length;
       });
@@ -194,11 +199,11 @@ export const timeTable = derived<
 
     const timeTable: TimeTable = {};
     $dates.forEach((date) => {
-      timeTable[date.toISODate()] = {};
+      timeTable[isoDate(date)] = {};
     });
 
     $appointmentsFilteredByDate.forEach((appointment) => {
-      const dateString = fromISO(appointment.start_time).toISODate();
+      const dateString = isoDate(fromISO(appointment.start_time));
       const startTimeStamp = fromISO(appointment.start_time).toLocaleString(
         DateTime.TIME_24_SIMPLE
       );
@@ -246,7 +251,7 @@ export const timeTable = derived<
     // for each row that is not full, fill it with empty
     $relevantTimeSlots.forEach((timeSlot) => {
       $dates.forEach((date) => {
-        const dateString = date.toISODate();
+        const dateString = isoDate(date);
         const timeTableCol = timeTable[dateString];
         if (!timeTableCol) {
           throw new Error('timeTableCol is undefined');
@@ -258,7 +263,7 @@ export const timeTable = derived<
         // overlaps is max appointments at each timeslot for that date
         const overlaps = Math.max(
           ...$relevantTimeSlots.map((timeSlot) => {
-            const appointments = (timeTableCol[timeSlot] ?? []).filter((appointment) => {
+            const appointments = (timeTableCol[timeSlot] ?? []).filter((appointment: TimeTable[string][string][number]) => {
               return appointment;
             });
             return appointments.length;

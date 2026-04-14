@@ -62,7 +62,7 @@
       <tr>
         <th class="timefield">Uhrzeit</th>
         {#each $dates as date}
-          <th colspan={$howManyAppointmentsOverlap[date.toISODate()]}>
+          <th colspan={$howManyAppointmentsOverlap[date.toISODate()!]}>
             {date.toLocaleString({ weekday: 'short', day: 'numeric', month: 'numeric' })}
             <!-- {$howManyAppointmentsOverlap[date.toISODate()]} -->
           </th>
@@ -74,7 +74,7 @@
         <tr>
           <td class="timefield">{timeSlot.replace('-', ' - ')}</td>
           {#each $dates as date}
-            {#each ($timeTable[date.toISODate()]?.[timeSlot] ?? []) as slot, _slotIdx (slotKey(slot, _slotIdx))}
+            {#each ($timeTable[date.toISODate()!]?.[timeSlot] ?? []) as slot, _slotIdx (slotKey(slot, _slotIdx))}
               {#if slot.empty}
                 {#if slot.filler}
                   <td class="placeholder" rowspan="1"><!--1--></td>

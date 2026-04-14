@@ -3,27 +3,31 @@
 ## Prerequisites
 
 - Nix with flakes enabled
+- Docker with the Compose plugin (`docker compose`)
 
-## Setup
+## First-time setup
 
 ```sh
-cp backend/.env.sample backend/.env
-# edit backend/.env if needed (defaults match the DB setup below)
-cd backend && uv sync
+# Enter dev shell (provides uv, python, node, psql)
+nix develop
+
+# Install Python deps
+cd backend && uv sync && cd ..
+
+# Get the DB dump from Eli, then place it at:
+#   data/pauline-dump.sql
+#
+# Then load it into a local postgres container:
+setup-db
 ```
 
-### Database
+`setup-db` starts a postgres container via `docker-compose.dev.yml`, loads the dump, and writes `backend/.env` from `backend/.env.sample` if it doesn't exist yet.
 
-You need a PostgreSQL instance with the Pauline DB loaded. Ask Eli for the dump file, then:
+To reset the DB from scratch:
 
 ```sh
-# Copy dump into place (gitignored)
-cp /path/to/pauline-dump.sql data/pauline-dump.sql
-
-# Start a local postgres and load the dump
-# (adjust PGUSER/PGPASSWORD/PGDATABASE to match backend/.env)
-createdb pauline
-psql pauline < data/pauline-dump.sql
+docker compose -f docker-compose.dev.yml down -v
+setup-db
 ```
 
 ## Run
@@ -33,4 +37,4 @@ nix develop
 run-dev
 ```
 
-Opens at <http://localhost:8000>. The backend spawns the Vite dev server internally and proxies it.
+Opens at <http://localhost:8000>. The backend spawns the Vite dev server internally and proxies all frontend requests through it.

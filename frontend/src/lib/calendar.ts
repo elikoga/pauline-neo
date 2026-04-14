@@ -12,8 +12,8 @@ export const exportCalendar = derived<typeof realAppointments, () => void>(
       timezone: 'Europe/Berlin',
       events: $appointments.flatMap((appointmentCollection): ICalEventData[] =>
         appointmentCollection.appointments.map((appointment) => ({
-          start: fromISO(appointment.start_time),
-          end: fromISO(appointment.end_time),
+          start: fromISO(appointment.start_time).toJSDate(),
+          end: fromISO(appointment.end_time).toJSDate(),
           timezone: 'Europe/Berlin',
           summary: `${appointmentCollection.name}`,
           location: appointment.room,
