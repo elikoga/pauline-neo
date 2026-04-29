@@ -2,6 +2,7 @@
   import Hamburger from '$lib/components/ui/Hamburger.svelte';
   import { modalStore } from '$lib/modal';
   import InfoModal from '../modals/InfoModal.svelte';
+  import { canRedo, canUndo, redo, undo } from '$lib/appointments';
 
   export let sidebarOpen: boolean;
   export let sidebarLocked: boolean;
@@ -20,9 +21,36 @@
       <img class="w-8 h-8 ml-3" src="https://fsmi.uni-paderborn.de/images/pi_taste.png" alt="" />
       <h1 class="text-4xl font-bold text-white ml-3">Pauline</h1>
     </div>
+    <div
+      class="history-controls bar-content flex items-center gap-1"
+      aria-label="Änderungen rückgängig machen oder wiederherstellen"
+    >
+      <button
+        type="button"
+        class="history-button"
+        on:click={undo}
+        disabled={!$canUndo}
+        aria-label="Letzte Änderung rückgängig machen"
+        title="Rückgängig (Ctrl+Z)"
+      >
+        ↶
+        <span class="history-label">Rückgängig</span>
+      </button>
+      <button
+        type="button"
+        class="history-button"
+        on:click={redo}
+        disabled={!$canRedo}
+        aria-label="Rückgängig gemachte Änderung wiederherstellen"
+        title="Wiederherstellen (Ctrl+Y)"
+      >
+        ↷
+        <span class="history-label">Wiederherstellen</span>
+      </button>
+    </div>
     <button
       type="button"
-      class="question-circle bar-content ml-auto rounded-full border-2"
+      class="question-circle bar-content rounded-full border-2"
       on:click={() => ($modalStore = InfoModal)}
       aria-label="Informationen zu Pauline"
     >
@@ -47,6 +75,43 @@
     color: white;
   }
 
+  .history-controls {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .history-button {
+    min-height: calc(var(--header-height) - 0.5rem);
+    min-width: calc(var(--header-height) - 0.5rem);
+    color: white;
+    border: 1px solid var(--secondary);
+    border-radius: 0.25rem;
+    padding: 0 0.5rem;
+    touch-action: manipulation;
+  }
+
+  .history-button:hover:not(:disabled) {
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .history-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .history-label {
+    display: none;
+    color: white;
+    margin-left: 0.25rem;
+  }
+
+  @media screen and (min-width: 768px) {
+    .history-label {
+      display: inline;
+    }
+  }
+
   .question-circle {
     width: calc(var(--header-height) - 0.5rem);
     height: calc(var(--header-height) - 0.5rem);
@@ -54,6 +119,16 @@
     margin-right: 0.25rem;
     text-align: center;
     font-size: 1.5rem;
+  }
+
+  @media screen and (max-width: 420px) {
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    .bar-content > img {
+      display: none;
+    }
   }
 
   .question-circle:hover {
