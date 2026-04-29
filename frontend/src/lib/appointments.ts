@@ -5,6 +5,7 @@ import { colorCount, colors } from '$lib/colors';
 import { writableLocalStorageStore } from './localStorageStore';
 import { fromISO } from './fromISOcache';
 import type { Interval } from 'luxon';
+import { dbg } from './debug';
 
 // toISODate() returns string|null in Luxon 3; all dates here are constructed from
 // known-valid ISO strings so the non-null assertion is always safe.
@@ -43,6 +44,7 @@ export const replaceRealAppointments = (
   appointments: AppointmentCollection[],
   options: { resetHistory?: boolean } = {}
 ): void => {
+  dbg('replaceRealAppointments:', appointments.length, 'appts, resetHistory:', options.resetHistory);
   skipNextPersistence = true;
   if (options.resetHistory) {
     realAppointmentsHistory = [];
