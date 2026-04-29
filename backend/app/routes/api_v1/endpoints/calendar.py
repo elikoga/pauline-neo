@@ -58,12 +58,13 @@ def replace_calendar_state(
     current_account: models.UserAccount = Depends(require_current_account),
     session: Session = Depends(get_session),
 ):
-    # Replace all timetables for this user
-    session.query(models.Timetable).filter(
-        models.Timetable.user_account_id == current_account.id
-    ).delete()
+    # Replace all timetables for this user.
+    # active_timetable has FK references to timetable, so delete those first.
     session.query(models.ActiveTimetable).filter(
         models.ActiveTimetable.user_account_id == current_account.id
+    ).delete()
+    session.query(models.Timetable).filter(
+        models.Timetable.user_account_id == current_account.id
     ).delete()
     session.flush()
 
