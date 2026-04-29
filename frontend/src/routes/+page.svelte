@@ -9,16 +9,22 @@
   import OverviewModal from '$lib/components/modals/OverviewModal.svelte';
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
   import ChangelogModal from '$lib/components/modals/ChangelogModal.svelte';
+  import TimetablesModal from '$lib/components/modals/TimetablesModal.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
-  import { undo, redo, realAppointments } from '$lib/appointments';
-  import { cacheVersion, tryAutoReplaceAppointments } from '$lib/api';
+  import { registerAppointmentPersistence, undo, redo, realAppointments } from '$lib/appointments';
+  import { cacheVersion, semesterNameStore, tryAutoReplaceAppointments } from '$lib/api';
   import type { AppointmentCollection } from '$lib/api';
   import { browser } from '$app/environment';
   import SemesterSelector from '$lib/components/SemesterSelector.svelte';
+  import { ensureActiveTimetable, persistActiveTimetableAppointments } from '$lib/timetables';
 
   const appointments = writable([]);
   setContext('appointments', appointments);
+  if (browser) {
+    ensureActiveTimetable(get(semesterNameStore));
+    registerAppointmentPersistence(persistActiveTimetableAppointments);
+  }
 
   // Heal stale appointments (CID changed due to scraper hash updates) by finding
   // the unambiguous replacement.  Runs once on mount (to fix data from localStorage)
@@ -70,10 +76,7 @@
 
 <Modal
   show={$modalStore}
-  styleWindow={{
-    backgroundColor: 'var(--background) !important',
-    width: 'min(56rem, calc(100vw - 4rem))'
-  }}
+  styleWindow={{ backgroundColor: 'var(--background) !important' }}
   classWindow="p-5"
   styleCloseButton={{ backgroundColor: 'var(--primary) !important' }}
 />
@@ -127,6 +130,11 @@
     <div class="timetable w-full m-2">
       <div class="timetableheader grid grid-cols-2 gap-3">
         <div class="toolbar-group">
+          <Button
+            on:click={() => {
+              $modalStore = TimetablesModal;
+            }}>Stundenpläne</Button
+          >
           <Button
             on:click={() => {
               $modalStore = ChangelogModal;

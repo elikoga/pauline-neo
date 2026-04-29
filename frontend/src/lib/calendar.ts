@@ -100,7 +100,7 @@ const appointmentSeriesKey = (appointment: Appointment): string => {
 const daysBetween = (left: ReturnType<typeof fromISO>, right: ReturnType<typeof fromISO>): number =>
   Math.round(right.startOf('day').diff(left.startOf('day'), 'days').days);
 
-const candidateIntervals = (appointments: Appointment[]): number[] => {
+const possibleIntervals = (appointments: Appointment[]): number[] => {
   if (appointments.length < 2) return [1];
 
   const starts = appointments.map((appointment) => fromISO(appointment.start_time));
@@ -124,7 +124,7 @@ const buildSeriesFromGroup = (appointments: Appointment[]): AppointmentSeries[] 
     const remaining = sorted.filter((appointment) => unused.has(appointment));
     let bestSeries: AppointmentSeries | undefined;
 
-    for (const intervalWeeks of candidateIntervals(remaining)) {
+    for (const intervalWeeks of possibleIntervals(remaining)) {
       const current = [first];
       const cancelledAppointments: Appointment[] = [];
 
@@ -153,7 +153,7 @@ const buildSeriesFromGroup = (appointments: Appointment[]): AppointmentSeries[] 
         expectedStart = expectedStart.plus({ weeks: intervalWeeks });
       }
 
-      const candidate = {
+      const possibleSeries = {
         first,
         appointments: current,
         cancelledAppointments,
@@ -162,11 +162,11 @@ const buildSeriesFromGroup = (appointments: Appointment[]): AppointmentSeries[] 
 
       if (
         bestSeries === undefined ||
-        candidate.appointments.length > bestSeries.appointments.length ||
-        (candidate.appointments.length === bestSeries.appointments.length &&
-          candidate.cancelledAppointments.length < bestSeries.cancelledAppointments.length)
+        possibleSeries.appointments.length > bestSeries.appointments.length ||
+        (possibleSeries.appointments.length === bestSeries.appointments.length &&
+          possibleSeries.cancelledAppointments.length < bestSeries.cancelledAppointments.length)
       ) {
-        bestSeries = candidate;
+        bestSeries = possibleSeries;
       }
     }
 
