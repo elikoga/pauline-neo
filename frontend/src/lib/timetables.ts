@@ -21,6 +21,8 @@ import { authState } from './auth';
 import {
   loadPersistedCalendar,
   savePersistedCalendar,
+  sanitizeCalendarState,
+  validateCalendarState,
   type CalendarState
 } from './calendarPersistence';
 import { runMigrations } from './localStorageMigrations';
@@ -92,10 +94,15 @@ const persistStateForAccount = (): void => {
   if (savePersistedStateTimer) clearTimeout(savePersistedStateTimer);
 
   savePersistedStateTimer = setTimeout(() => {
-    savePersistedCalendar({
+    const state: CalendarState = {
       activeTimetableIds: get(activeTimetableIds),
       timetables: get(savedTimetables)
-    }).catch((error) => {
+    };
+    if (!validateCalendarState(state)) {
+      dbg('persistStateForAccount: validation failed, sanitizing before save');
+    }
+    const sanitized = sanitizeCalendarState(state);
+    savePersistedCalendar(sanitized).catch((error) => {
       console.error('Failed to persist timetables:', error);
     });
   }, 500);
@@ -135,9 +142,15 @@ export const mergeActiveIds = (
 ): Record<string, string> => ({ ...server, ...local });
 
 const loadServerStateIntoStores = (serverState: CalendarState): void => {
-  savedTimetables.set(serverState.timetables);
-  activeTimetableIds.set(serverState.activeTimetableIds);
+  const sanitized = sanitizeCalendarState(serverState);
+  dbg('loadServerStateIntoStores:', sanitized.timetables.length, 'timetables,', Object.keys(sanitized.activeTimetableIds).length, 'active IDs');
+  for (const t of sanitized.timetables) {
+    if (t.semesterName) dbg('  ', t.id, t.semesterName, t.appointments.length, 'appts', t.deleted ? '(deleted)' : '');
+  }
+  savedTimetables.set(sanitized.timetables);
+  activeTimetableIds.set(sanitized.activeTimetableIds);
   const active = activeTimetableForSemester(get(semesterNameStore));
+  dbg('loadServerStateIntoStores: active for', get(semesterNameStore), '->', active?.id, active?.appointments.length, 'appts');
   replaceRealAppointments(active?.appointments ?? [], { resetHistory: true });
 };
 
@@ -148,9 +161,11 @@ const reconcileOnLogin = async (
 ): Promise<void> => {
   const serverHasData = serverState.timetables.length > 0;
   const localHasData = localTimetables.length > 0;
+  dbg('reconcileOnLogin: server', serverState.timetables.length, 'timetables, local', localTimetables.length, 'timetables');
 
   if (!serverHasData && localHasData) {
     // Case A: first login — upload local to server, keep local as-is.
+    dbg('reconcileOnLogin: Case A — uploading', localTimetables.length, 'local timetables to server');
     await savePersistedCalendar({
       activeTimetableIds: localActiveIds,
       timetables: localTimetables
@@ -162,6 +177,10 @@ const reconcileOnLogin = async (
     // Case B: both sides have data — merge, then persist back.
     const mergedTimetables = mergeTimetables(localTimetables, serverState.timetables);
     const mergedActiveIds = mergeActiveIds(localActiveIds, serverState.activeTimetableIds);
+    dbg('reconcileOnLogin: Case B — merged', mergedTimetables.length, 'timetables');
+    for (const t of mergedTimetables) {
+      dbg('  ', t.id, t.semesterName, t.appointments.length, 'appts', t.deleted ? '(deleted)' : '');
+    }
     loadServerStateIntoStores({
       timetables: mergedTimetables,
       activeTimetableIds: mergedActiveIds
@@ -174,6 +193,7 @@ const reconcileOnLogin = async (
   }
 
   // Case C: only server has data — use it.
+  dbg('reconcileOnLogin: Case C — using server data');
   loadServerStateIntoStores(serverState);
 };
 
