@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, readonly } from 'svelte/store';
 import type { Appointment, AppointmentCollection } from './api';
 import { DateTime } from 'luxon';
 import { colorCount, colors } from '$lib/colors';
@@ -21,11 +21,22 @@ let redoHistory: AppointmentCollection[][] = [];
 
 const UNDOHISTORYLIMIT = 50;
 
+const canUndoWritable = writable(false);
+const canRedoWritable = writable(false);
+export const canUndo = readonly(canUndoWritable);
+export const canRedo = readonly(canRedoWritable);
+
+const updateUndoRedoState = (): void => {
+  canUndoWritable.set(realAppointmentsHistory.length > 1);
+  canRedoWritable.set(redoHistory.length > 0);
+};
+
 realAppointments.subscribe(($realAppointments) => {
   realAppointmentsHistory = [...realAppointmentsHistory, $realAppointments].slice(
     -UNDOHISTORYLIMIT
   );
   redoHistory = [];
+  updateUndoRedoState();
 });
 
 export const undo = (): void => {
@@ -39,6 +50,7 @@ export const undo = (): void => {
     last && realAppointmentsHistory.push(last);
     current && realAppointmentsHistory.push(current);
   }
+  updateUndoRedoState();
 };
 
 export const redo = (): void => {
@@ -48,6 +60,7 @@ export const redo = (): void => {
     realAppointments.set(last);
     redoHistory = oldRedoHistory;
   }
+  updateUndoRedoState();
 };
 
 export const previewAppointments = writable<AppointmentCollection[]>([]);

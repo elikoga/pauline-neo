@@ -3,6 +3,10 @@
 <section>
   <h2 class="text-2xl">Bedienung</h2>
   <ul>
+    <li>
+      Rückgängig und Wiederherstellen sind jetzt direkt als Buttons verfügbar und damit auch am Handy
+      nutzbar.
+    </li>
     <li>Die Aktionsbuttons im Stundenplan passen sich jetzt besser an kleinere Bildschirme an.</li>
   </ul>
 </section>

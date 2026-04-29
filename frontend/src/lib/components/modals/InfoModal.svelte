@@ -26,9 +26,9 @@
   </span>
 </p>
 <p>
-  Wenn du einen Fehler machst, kannst du ihn am Rechner mit <kbd>Ctrl</kbd>+<kbd>Z</kbd> rückgängig
-  machen. Mit <kbd>Ctrl</kbd>+<kbd>Y</kbd> kannst du ihn wiederherstellen. Für Undo/Redo am Handy arbeiten
-  wir noch ;)
+  Wenn du einen Fehler machst, kannst du ihn mit <kbd>Ctrl</kbd>+<kbd>Z</kbd> am Rechner oder über
+  den Button „Rückgängig“ am Handy rückgängig machen. Mit <kbd>Ctrl</kbd>+<kbd>Y</kbd>
+  beziehungsweise „Wiederherstellen“ holst du rückgängig gemachte Änderungen zurück.
 </p>
 <br />
 <h2 class="text-2xl">Autoren</h2>
