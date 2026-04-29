@@ -1,0 +1,87 @@
+name: Scrape and upload PAUL data
+
+on:
+  schedule:
+    # Run daily after PAUL's overnight maintenance windows are usually over.
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target instance to update"
+        type: choice
+        required: true
+        default: new
+        options:
+          - new
+      preview_url:
+        description: "Optional preview base URL, e.g. https://feature-abc.preview.new.pauline-upb.de"
+        required: false
+        type: string
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: scraper
+
+      - name: Build scraper
+        working-directory: scraper
+        run: cargo build --release
+
+      - name: Scrape newest semester
+        working-directory: scraper
+        run: |
+          set -euo pipefail
+          SEMESTER=$(./target/release/paul-scrape-rs --list-semesters | head -n 1)
+          if [ -z "$SEMESTER" ]; then
+            echo "Could not determine newest semester" >&2
+            exit 1
+          fi
+          echo "semester=$SEMESTER" >> "$GITHUB_ENV"
+          ./target/release/paul-scrape-rs "https://paul.uni-paderborn.de/" "$SEMESTER"
+          ./target/release/convertjson
+
+      - name: Upload to selected instances
+        working-directory: scraper
+        env:
+          TARGET: ${{ inputs.target || 'new' }}
+          PREVIEW_URL: ${{ inputs.preview_url }}
+          NEW_API_KEY: ${{ secrets.PAULINE_NEW_ADMIN_API_KEY }}
+          PREVIEW_API_KEY: ${{ secrets.PAULINE_PREVIEW_ADMIN_API_KEY }}
+        run: |
+          set -euo pipefail
+          upload() {
+            local base_url="$1"
+            local api_key="$2"
+            local name="$3"
+            if [ -z "$api_key" ]; then
+              echo "Missing API key for $name" >&2
+              exit 1
+            fi
+            echo "Uploading $semester to $name ($base_url)"
+            curl --fail-with-body -X POST --data-binary @semester.json \
+              "$base_url/api/v1/admin/semester" \
+              -H "API-Key: $api_key" \
+              -H "Content-Type: application/json"
+          }
+
+          case "$TARGET" in
+            new)
+              upload "https://new.pauline-upb.de" "$NEW_API_KEY" "new"
+              ;;
+            *)
+              echo "Unknown target: $TARGET" >&2
+              exit 1
+              ;;
+          esac
+
+          if [ -n "$PREVIEW_URL" ]; then
+            upload "${PREVIEW_URL%/}" "$PREVIEW_API_KEY" "preview"
+          fi
