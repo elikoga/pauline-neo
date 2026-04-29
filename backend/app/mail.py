@@ -22,6 +22,16 @@ def login_email_body(token: str) -> str:
     )
 
 
+def login_email_html(token: str) -> str:
+    link = auth_link(token)
+    return (
+        "<p>Hallo,</p>"
+        "<p>mit diesem Link meldest du dich bei Pauline an:</p>"
+        f'<p><a href="{link}">{link}</a></p>'
+        "<p>Wenn du diese E-Mail nicht angefordert hast, kannst du sie ignorieren.</p>"
+    )
+
+
 def send_auth_email(receiver_email: str, token: str, settings: MailSettings = mail_settings) -> None:
     missing = [
         name
@@ -44,6 +54,7 @@ def send_auth_email(receiver_email: str, token: str, settings: MailSettings = ma
     msg["To"] = receiver_email
     msg["Message-ID"] = make_msgid(domain=settings.MAIL_SENDER_EMAIL.split("@", 1)[1])
     msg.set_content(login_email_body(token))
+    msg.add_alternative(login_email_html(token), subtype="html")
 
     context = ssl.create_default_context()
     if settings.MAIL_USE_STARTTLS:
