@@ -2,6 +2,7 @@
   import Button from '$lib/components/Button.svelte';
   import { semesterNameStore } from '$lib/api';
   import {
+    type SavedTimetable,
     activeTimetableIds,
     createTimetable,
     deleteTimetable,
@@ -11,9 +12,9 @@
     savedTimetables,
     switchTimetable
   } from '$lib/timetables';
+  import { sortTimetablesBySemester } from '$lib/semesterSort';
 
   $: semesterName = $semesterNameStore;
-  $: timetables = $savedTimetables;
   $: activeTimetableId = $activeTimetableIds[semesterName];
 
   $: if (semesterName) {
@@ -35,6 +36,46 @@
   const remove = (timetableId: string) => {
     if (timetables.length <= 1) return;
     deleteTimetable(timetableId);
+  };
+
+  $: timetables = (() => {
+    const sorted = [...$savedTimetables];
+    const withOrder = sorted.filter(t => t.order !== undefined) as (SavedTimetable & { order: number })[];
+    const withoutOrder = sorted.filter(t => t.order === undefined);
+    // Sort by order (ascending), put items without order at the end
+    withOrder.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    // For items without order, append them (they'll get order assigned on next migration)
+    return [...withOrder, ...withoutOrder];
+  })();
+
+  const moveUp = (timetableId: string) => {
+    const list = $savedTimetables;
+    const sorted = [...list].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    const idx = sorted.findIndex(t => t.id === timetableId);
+    if (idx <= 0) return; // already at top
+    const current = sorted[idx];
+    const above = sorted[idx - 1];
+    if (!current.order || !above.order) return;
+    // Swap orders
+    const temp = current.order;
+    current.order = above.order;
+    above.order = temp;
+    savedTimetables.set(sorted);
+  };
+
+  const moveDown = (timetableId: string) => {
+    const list = $savedTimetables;
+    const sorted = [...list].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    const idx = sorted.findIndex(t => t.id === timetableId);
+    if (idx === -1 || idx >= sorted.length - 1) return; // already at bottom
+    const current = sorted[idx];
+    const below = sorted[idx + 1];
+    if (!current.order || !below.order) return;
+    // Swap orders
+    const temp = current.order;
+    current.order = below.order;
+    below.order = temp;
+    savedTimetables.set(sorted);
   };
 </script>
 
@@ -71,6 +112,12 @@
           {timetable.id === activeTimetableId ? 'Aktiv' : 'Öffnen'}
         </Button>
         {#if timetables.length > 1}
+          <Button on:click={() => moveUp(timetable.id)} disabled={timetable.order === 0 || timetable.order === undefined}>
+            ↑ Nach oben
+          </Button>
+          <Button on:click={() => moveDown(timetable.id)} disabled={timetable.order === undefined || timetable.order >= timetables.length - 1}>
+            ↓ Nach unten
+          </Button>
           <Button on:click={() => remove(timetable.id)}>Löschen</Button>
         {/if}
       </div>
