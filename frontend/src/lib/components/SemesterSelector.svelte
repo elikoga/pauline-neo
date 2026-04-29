@@ -39,45 +39,20 @@
   ]);
 
   $: if (browser) {
-    console.log(`current semester: ${$semesterNameStore}`);
-    // set startDate to current semester start date
     const date = startDates.get($semesterNameStore);
     if (date) {
       $startDate = date;
     }
   }
-  $: {
-    // if lastSemesterName was undefined, set it now:
-    if (lastSemesterName === undefined) {
-      console.log('sus');
-      lastSemesterName = $semesterNameStore;
-    } else {
-      // if they are equal, something went horribly wrong
-      if (lastSemesterName === $semesterNameStore) {
-        console.log("same semester, but it shouldn't be");
-        console.log('we will just not do anything at the moment');
-      } else {
-        // assert that we won't override anything:
-        if (appointmentsSemesterStore.has(lastSemesterName)) {
-          console.log('we will not override anything');
-        } else {
-          console.log('we will override');
-          // save old appointments to local storage
-          appointmentsSemesterStore.set(lastSemesterName, $realAppointments);
-          // get new appointments from store
-          let maybeNewAppointments = appointmentsSemesterStore.get($semesterNameStore);
-          // if we have new appointments, use them
-          if (maybeNewAppointments) {
-            $realAppointments = maybeNewAppointments;
-          } else {
-            // otherwise, reset
-            $realAppointments = [];
-          }
-          // now delete the old appointments from local storage
-          appointmentsSemesterStore.delete($semesterNameStore);
-        }
-      }
+
+  $: if (browser && lastSemesterName !== $semesterNameStore) {
+    if (!appointmentsSemesterStore.has(lastSemesterName)) {
+      appointmentsSemesterStore.set(lastSemesterName, $realAppointments);
     }
+
+    const nextAppointments = appointmentsSemesterStore.get($semesterNameStore);
+    $realAppointments = nextAppointments ?? [];
+    appointmentsSemesterStore.delete($semesterNameStore);
     lastSemesterName = $semesterNameStore;
   }
 </script>
