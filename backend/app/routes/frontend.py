@@ -131,6 +131,27 @@ class Frontend:
 
         asyncio.get_event_loop().create_task(self._watch_for_exit())
 
+        async def _try_connect_port() -> None:
+            """Fallback: if the frontend port accepts a connection, it's ready."""
+            for _ in range(100):  # up to 10 seconds
+                await asyncio.sleep(0.1)
+                try:
+                    reader, writer = await asyncio.open_connection(
+                        "127.0.0.1", FRONTEND_PORT
+                    )
+                    writer.close()
+                    await writer.wait_closed()
+                    if not self.started.is_set():
+                        logger.info(
+                            "frontend: port %d is accepting connections"
+                            " — assuming ready",
+                            FRONTEND_PORT,
+                        )
+                    self.started.set()
+                    return
+                except (ConnectionRefusedError, OSError):
+                    continue
+
         async def _pipe(stream: asyncio.StreamReader, level: int = logging.INFO) -> None:
             while not stream.at_eof():
                 line = await stream.readline()
@@ -164,6 +185,7 @@ class Frontend:
 
         asyncio.create_task(_pipe_until_ready(self.process.stdout))
         asyncio.create_task(_pipe(self.process.stderr, level=logging.ERROR))
+        asyncio.create_task(_try_connect_port())
 
         await self.started.wait()
 
