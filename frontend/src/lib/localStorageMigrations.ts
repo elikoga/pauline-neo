@@ -23,7 +23,7 @@ type SavedTimetable = {
   deleted?: boolean;
 };
 
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
 
 const VERSION_KEY = 'paulineStorageVersion';
 
@@ -132,6 +132,23 @@ const migrate1to2 = (): void => {
   writeJson('timetables', sorted);
 };
 
+// --- Migration 2 → 3 --------------------------------------------------------
+// Backfill `order` for timetables created after migration 1→2 but before
+// createTimetable/ensureActiveTimetable assigned order on creation.
+
+const migrate2to3 = (): void => {
+  const timetables = readJson<SavedTimetable[]>('timetables') ?? [];
+  if (timetables.length === 0) return;
+  if (timetables.every((t) => t.order !== undefined)) return;
+  let maxOrder = Math.max(-1, ...timetables.filter((t) => t.order !== undefined).map((t) => t.order!));
+  for (const t of timetables) {
+    if (t.order === undefined) {
+      t.order = ++maxOrder;
+    }
+  }
+  writeJson('timetables', timetables);
+};
+
 // Parse the legacy 'appointmentsSemesterStore' localStorage key.
 // On main, SemesterSelector stored per-semester appointments as a LocalStorageMap
 // with format: {"map":{"dataType":"Map","value":[["Semester", [...]], ...]}}
@@ -163,6 +180,7 @@ const parseLegacySemesterStore = (): Map<string, AppointmentCollection[]> => {
 const migrations: Array<{ from: number; to: number; migrate: () => void }> = [
   { from: 0, to: 1, migrate: migrate0to1 },
   { from: 1, to: 2, migrate: migrate1to2 },
+  { from: 2, to: 3, migrate: migrate2to3 },
 ];
 
 export const getStorageVersion = (): number => {
