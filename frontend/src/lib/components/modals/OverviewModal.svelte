@@ -23,7 +23,7 @@
 
 {#if $courses}
   {#each $courses as course}
-    <Course courseInfo={course} />
+    <Course courseInfo={course} open={true} />
   {:else}
     <p>Nichts gewählt</p>
   {/each}
