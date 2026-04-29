@@ -49,33 +49,41 @@
   })();
 
   const moveUp = (timetableId: string) => {
-    const list = $savedTimetables.filter(t => !t.deleted);
-    const sorted = [...list].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    const nonDeleted = $savedTimetables.filter(t => !t.deleted);
+    const sorted = [...nonDeleted].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
     const idx = sorted.findIndex(t => t.id === timetableId);
-    if (idx <= 0) return; // already at top
+    if (idx <= 0) return;
     const current = sorted[idx];
     const above = sorted[idx - 1];
-    if (!current.order || !above.order) return;
-    // Swap orders
-    const temp = current.order;
-    current.order = above.order;
-    above.order = temp;
-    savedTimetables.set(sorted);
+    if (current.order === undefined || above.order === undefined) return;
+    const newCurrentOrder = above.order;
+    const newAboveOrder = current.order;
+    savedTimetables.update(timetables =>
+      timetables.map(t => {
+        if (t.id === current.id) return { ...t, order: newCurrentOrder, updatedAt: new Date().toISOString() };
+        if (t.id === above.id) return { ...t, order: newAboveOrder, updatedAt: new Date().toISOString() };
+        return t;
+      })
+    );
   };
 
   const moveDown = (timetableId: string) => {
-    const list = $savedTimetables.filter(t => !t.deleted);
-    const sorted = [...list].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
+    const nonDeleted = $savedTimetables.filter(t => !t.deleted);
+    const sorted = [...nonDeleted].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
     const idx = sorted.findIndex(t => t.id === timetableId);
-    if (idx === -1 || idx >= sorted.length - 1) return; // already at bottom
+    if (idx === -1 || idx >= sorted.length - 1) return;
     const current = sorted[idx];
     const below = sorted[idx + 1];
-    if (!current.order || !below.order) return;
-    // Swap orders
-    const temp = current.order;
-    current.order = below.order;
-    below.order = temp;
-    savedTimetables.set(sorted);
+    if (current.order === undefined || below.order === undefined) return;
+    const newCurrentOrder = below.order;
+    const newBelowOrder = current.order;
+    savedTimetables.update(timetables =>
+      timetables.map(t => {
+        if (t.id === current.id) return { ...t, order: newCurrentOrder, updatedAt: new Date().toISOString() };
+        if (t.id === below.id) return { ...t, order: newBelowOrder, updatedAt: new Date().toISOString() };
+        return t;
+      })
+    );
   };
 </script>
 
@@ -112,12 +120,8 @@
           {timetable.id === activeTimetableId ? 'Aktiv' : 'Öffnen'}
         </Button>
         {#if timetables.length > 1}
-          <Button on:click={() => moveUp(timetable.id)} disabled={timetable.order === 0 || timetable.order === undefined}>
-            ↑ Nach oben
-          </Button>
-          <Button on:click={() => moveDown(timetable.id)} disabled={timetable.order === undefined || timetable.order >= timetables.length - 1}>
-            ↓ Nach unten
-          </Button>
+          <button class="icon-btn" on:click={() => moveUp(timetable.id)} disabled={timetable.order === 0 || timetable.order === undefined} aria-label="Nach oben">↑</button>
+          <button class="icon-btn" on:click={() => moveDown(timetable.id)} disabled={timetable.order === undefined || timetable.order >= timetables.length - 1} aria-label="Nach unten">↓</button>
           <Button on:click={() => remove(timetable.id)}>Löschen</Button>
         {/if}
       </div>
@@ -175,6 +179,28 @@
 
   .row-actions {
     grid-auto-flow: column;
+  }
+
+  .icon-btn {
+    background: none;
+    border: 1px solid #94a3b8;
+    border-radius: 0;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    line-height: 1;
+    min-height: 2rem;
+    min-width: 2rem;
+    padding: 0.25rem;
+  }
+
+  .icon-btn:hover:not(:disabled) {
+    background: #e2e8f0;
+  }
+
+  .icon-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 
   @media screen and (max-width: 640px) {
