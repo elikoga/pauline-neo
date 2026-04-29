@@ -23,4 +23,4 @@ scraper/.api_key
 
 
 # DB dumps (local only — copy via: scp brickfire.eu:~/pauline-dump.sql data/pauline-dump.sql)
-data/
+/data/

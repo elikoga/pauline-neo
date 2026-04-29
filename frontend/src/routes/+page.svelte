@@ -9,6 +9,7 @@
   import OverviewModal from '$lib/components/modals/OverviewModal.svelte';
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
   import ChangelogModal from '$lib/components/modals/ChangelogModal.svelte';
+  import AuthModal from '$lib/components/modals/AuthModal.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
   import { undo, redo, realAppointments } from '$lib/appointments';
@@ -70,10 +71,7 @@
 
 <Modal
   show={$modalStore}
-  styleWindow={{
-    backgroundColor: 'var(--background) !important',
-    width: 'min(56rem, calc(100vw - 4rem))'
-  }}
+  styleWindow={{ backgroundColor: 'var(--background) !important' }}
   classWindow="p-5"
   styleCloseButton={{ backgroundColor: 'var(--primary) !important' }}
 />
@@ -127,6 +125,11 @@
     <div class="timetable w-full m-2">
       <div class="timetableheader grid grid-cols-2 gap-3">
         <div class="toolbar-group">
+          <Button
+            on:click={() => {
+              $modalStore = AuthModal;
+            }}>Konto / Anmeldelink</Button
+          >
           <Button
             on:click={() => {
               $modalStore = ChangelogModal;

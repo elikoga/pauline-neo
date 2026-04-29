@@ -1,9 +1,11 @@
-import { writable, derived, readonly } from 'svelte/store';
+import { writable, derived, readonly, get } from 'svelte/store';
 import type { Appointment, AppointmentCollection } from './api';
 import { DateTime } from 'luxon';
 import { colorCount, colors } from '$lib/colors';
 import { writableLocalStorageStore } from './localStorageStore';
 import { fromISO } from './fromISOcache';
+import { authState } from './auth';
+import { loadPersistedCalendar, savePersistedCalendar } from './calendarPersistence';
 import type { Interval } from 'luxon';
 
 // toISODate() returns string|null in Luxon 3; all dates here are constructed from
@@ -19,6 +21,9 @@ export const realAppointments = writableLocalStorageStore<AppointmentCollection[
 let realAppointmentsHistory: AppointmentCollection[][] = [];
 let redoHistory: AppointmentCollection[][] = [];
 
+let loadedAccountId: number | null = null;
+let applyingPersistedCalendar = false;
+let savePersistedCalendarTimer: NodeJS.Timeout | undefined;
 const UNDOHISTORYLIMIT = 50;
 
 const canUndoWritable = writable(false);
@@ -31,12 +36,50 @@ const updateUndoRedoState = (): void => {
   canRedoWritable.set(redoHistory.length > 0);
 };
 
+const schedulePersistedCalendarSave = (appointments: AppointmentCollection[]): void => {
+  if (applyingPersistedCalendar || !get(authState).token) return;
+
+  if (savePersistedCalendarTimer) {
+    clearTimeout(savePersistedCalendarTimer);
+  }
+
+  savePersistedCalendarTimer = setTimeout(() => {
+    savePersistedCalendar(appointments).catch((error) => {
+      console.error('Failed to persist calendar:', error);
+    });
+  }, 500);
+};
+
+authState.subscribe(async ($authState) => {
+  const accountId = $authState.account?.id ?? null;
+  if (!accountId || !$authState.token) {
+    loadedAccountId = null;
+    return;
+  }
+  if (loadedAccountId === accountId) return;
+
+  loadedAccountId = accountId;
+  try {
+    const persistedCalendar = await loadPersistedCalendar();
+    if (!persistedCalendar) return;
+
+    applyingPersistedCalendar = true;
+    realAppointments.set(persistedCalendar.appointments);
+    applyingPersistedCalendar = false;
+  } catch (error) {
+    applyingPersistedCalendar = false;
+    console.error('Failed to load persisted calendar:', error);
+  }
+});
+
+
 realAppointments.subscribe(($realAppointments) => {
   realAppointmentsHistory = [...realAppointmentsHistory, $realAppointments].slice(
     -UNDOHISTORYLIMIT
   );
   redoHistory = [];
   updateUndoRedoState();
+  schedulePersistedCalendarSave($realAppointments);
 });
 
 export const undo = (): void => {
