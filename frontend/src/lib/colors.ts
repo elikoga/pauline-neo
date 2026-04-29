@@ -27,8 +27,8 @@ export const colors = (() => {
     })
     .map((h) => [
       // first dark then light
-      rgb2hex(...hsv2rgb(h, 0.62, 0.36)),
-      rgb2hex(...hsv2rgb(h, 0.46, 0.52))
+      rgb2hex(...hsv2rgb(h, 0.48, 0.33)),
+      rgb2hex(...hsv2rgb(h, 0.34, 0.46))
     ]);
   return colorList;
 })();

@@ -33,7 +33,7 @@
   .bar {
     width: 100%;
     height: var(--header-height);
-    background: linear-gradient(90deg, var(--primary), hsl(214, 38%, 22%));
+    background: linear-gradient(90deg, var(--primary), hsl(216, 27%, 21%));
     border-bottom: 1px solid var(--border);
   }
 

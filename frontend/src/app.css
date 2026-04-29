@@ -4,18 +4,18 @@
 @tailwind utilities;
 
 :root {
-  --primary: hsl(216, 45%, 18%);
-  --primary-hover: hsl(216, 42%, 23%);
-  --secondary: hsl(215, 18%, 46%);
-  --background: hsl(220, 24%, 9%);
-  --surface: hsl(218, 24%, 13%);
-  --surface-elevated: hsl(218, 22%, 17%);
-  --border: hsl(216, 16%, 27%);
-  --link: hsl(189, 84%, 55%);
-  --link-soft: hsl(189, 62%, 22%);
-  --text: hsl(214, 32%, 91%);
-  --text-muted: hsl(215, 18%, 68%);
-  --warning: hsl(38, 92%, 58%);
+  --primary: hsl(216, 34%, 18%);
+  --primary-hover: hsl(216, 30%, 23%);
+  --secondary: hsl(215, 14%, 48%);
+  --background: hsl(220, 18%, 10%);
+  --surface: hsl(218, 18%, 14%);
+  --surface-elevated: hsl(218, 16%, 18%);
+  --border: hsl(216, 12%, 29%);
+  --link: hsl(199, 48%, 61%);
+  --link-soft: hsl(199, 28%, 24%);
+  --text: hsl(214, 24%, 88%);
+  --text-muted: hsl(215, 13%, 67%);
+  --warning: hsl(38, 72%, 56%);
   --header-height: 50px;
   color-scheme: dark;
 }
