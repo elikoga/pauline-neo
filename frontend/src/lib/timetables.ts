@@ -11,6 +11,8 @@
 // Legacy keys are never deleted during migration — they remain as live backups.
 
 import { get } from 'svelte/store';
+import { dbg } from './debug';
+
 import type { AppointmentCollection } from './api';
 import { semesterNameStore } from './api';
 import { realAppointments, replaceRealAppointments } from './appointments';
@@ -216,11 +218,15 @@ export const activeTimetableForSemester = (semesterName: string): SavedTimetable
 
 export const ensureActiveTimetable = (semesterName: string): SavedTimetable => {
   const existing = activeTimetableForSemester(semesterName);
-  if (existing) return existing;
+  if (existing) {
+    dbg('ensureActiveTimetable:', semesterName, '-> found existing', existing.id, existing.appointments.length, 'appts');
+    return existing;
+  }
 
   const sameSemester = timetablesForSemester(get(savedTimetables), semesterName);
   const fallback = sameSemester[0];
   if (fallback) {
+    dbg('ensureActiveTimetable:', semesterName, '-> fallback', fallback.id, fallback.appointments.length, 'appts');
     activeTimetableIds.update((ids) => ({ ...ids, [semesterName]: fallback.id }));
     return fallback;
   }
@@ -232,6 +238,7 @@ export const ensureActiveTimetable = (semesterName: string): SavedTimetable => {
     appointments: get(realAppointments),
     updatedAt: new Date().toISOString()
   };
+  dbg('ensureActiveTimetable:', semesterName, '-> CREATED new, inherited', created.appointments.length, 'appts from realAppointments');
   savedTimetables.update((timetables) => [...timetables, created]);
   activeTimetableIds.update((ids) => ({ ...ids, [semesterName]: created.id }));
   return created;
@@ -240,8 +247,12 @@ export const ensureActiveTimetable = (semesterName: string): SavedTimetable => {
 export const persistActiveTimetableAppointments = (semesterOverride?: string): void => {
   const semesterName = semesterOverride ?? get(semesterNameStore);
   const active = activeTimetableForSemester(semesterName);
-  if (!active) return;
+  if (!active) {
+    dbg('persistActiveTimetableAppointments:', semesterName, '-> NO active timetable, skipping');
+    return;
+  }
   const appointments = get(realAppointments);
+  dbg('persistActiveTimetableAppointments:', semesterName, '-> saving', appointments.length, 'appts to', active.id);
   savedTimetables.update((timetables) =>
     timetables.map((timetable) =>
       timetable.id === active.id
