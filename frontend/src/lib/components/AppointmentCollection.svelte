@@ -82,6 +82,8 @@
   .container {
     /* make pretty */
     padding: 10px;
+    border-radius: 0.25rem;
+    color: var(--text-muted);
   }
 
   .container:hover {
@@ -90,7 +92,8 @@
   }
 
   .shown {
-    box-shadow: inset 0 0 100px 100px var(--dark-color, rgba(255, 255, 255, 0.1));
+    box-shadow: inset 0 0 100px 100px color-mix(in srgb, var(--dark-color) 82%, transparent);
+    color: var(--text);
   }
 
   /* .shown:hover {
@@ -98,6 +101,6 @@
   } */
 
   .locked:hover {
-    box-shadow: inset 0 0 100px 100px var(--light-color, rgba(255, 255, 255, 0.1));
+    box-shadow: inset 0 0 100px 100px color-mix(in srgb, var(--light-color) 85%, transparent);
   }
 </style>

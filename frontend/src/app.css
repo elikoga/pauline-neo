@@ -4,11 +4,18 @@
 @tailwind utilities;
 
 :root {
-  --primary: hsl(212, 41%, 25%);
-  --secondary: hsl(212, 31%, 62%);
-  --background: #222;
-  --link: hsl(202, 83%, 45%);
-  --text: rgb(209, 209, 209);
+  --primary: hsl(216, 45%, 18%);
+  --primary-hover: hsl(216, 42%, 23%);
+  --secondary: hsl(215, 18%, 46%);
+  --background: hsl(220, 24%, 9%);
+  --surface: hsl(218, 24%, 13%);
+  --surface-elevated: hsl(218, 22%, 17%);
+  --border: hsl(216, 16%, 27%);
+  --link: hsl(189, 84%, 55%);
+  --link-soft: hsl(189, 62%, 22%);
+  --text: hsl(214, 32%, 91%);
+  --text-muted: hsl(215, 18%, 68%);
+  --warning: hsl(38, 92%, 58%);
   --header-height: 50px;
   color-scheme: dark;
 }
@@ -25,4 +32,17 @@ a {
 body {
   background-color: var(--background);
   min-height: 100vh;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+::selection {
+  background-color: var(--link-soft);
+  color: var(--text);
 }

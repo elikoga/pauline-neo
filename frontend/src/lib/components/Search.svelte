@@ -115,7 +115,7 @@
   <div class="relative">
     <input
       type="text"
-      class="w-full border-0 rounded-0 focus:ring-link focus:ring focus:ring-inset focus:outline-none bg-background placeholder-slate-400 py-3 pl-10 pr-4"
+      class="w-full border border-border rounded focus:ring-link focus:ring focus:ring-inset focus:outline-none bg-surface placeholder-slate-500 py-3 pl-10 pr-4"
       placeholder="Suche nach Kurs oder Fachbereich..."
       bind:value={searchInput}
     />
@@ -135,7 +135,7 @@
     </button>
   </div>
   <div class="py-4 px-2 flex flex-col overflow-y-hidden">
-    <span class="text-s font-semibold text-slate-400 uppercase text-link">Kurse</span>
+    <span class="text-s font-semibold text-muted uppercase">Kurse</span>
     <div class="flex flex-col overflow-y-auto">
       {#await localIndexPopulatedPromise}
         Loading...

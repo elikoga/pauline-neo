@@ -11,23 +11,21 @@
 
 <style>
   div {
-    /* button */
-    /* fallback to primary blue */
     background-color: var(--primary);
-    /* fallback to white */
     color: white;
-    /* style like a button */
-    border: none;
-    border-radius: 0;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
     padding: 0.5rem 1rem;
     cursor: pointer;
-    transition: background-color 0.1s ease-in-out;
+    transition:
+      background-color 0.12s ease-in-out,
+      border-color 0.12s ease-in-out;
     display: inline-block;
-    /* light shadow */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   }
   div:hover {
-    filter: brightness(85%);
+    background-color: var(--primary-hover);
+    border-color: var(--link);
   }
   span {
     /* style like a button */

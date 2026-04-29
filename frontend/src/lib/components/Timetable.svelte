@@ -22,10 +22,19 @@
   // slotKey gives Svelte a stable identity for each slot so components are
   // properly destroyed/created instead of being reused by position.
   // Empty/filler slots have no meaningful identity so they use their index.
-  const slotKey = (slot: { empty: boolean; filler?: boolean; appointment?: unknown }, i: number): string => {
+  const slotKey = (
+    slot: { empty: boolean; filler?: boolean; appointment?: unknown },
+    i: number
+  ): string => {
     if (slot.empty) return `e:${i}`;
-    const c = (slot as { empty: false; appointment: { collection: { cid: string; name: string }; start_time: string } }).appointment.collection;
-    const s = (slot as { empty: false; appointment: { start_time: string } }).appointment.start_time;
+    const c = (
+      slot as {
+        empty: false;
+        appointment: { collection: { cid: string; name: string }; start_time: string };
+      }
+    ).appointment.collection;
+    const s = (slot as { empty: false; appointment: { start_time: string } }).appointment
+      .start_time;
     return `a:${c.cid}:${c.name}:${s}`;
   };
 
@@ -74,7 +83,7 @@
         <tr>
           <td class="timefield">{timeSlot.replace('-', ' - ')}</td>
           {#each $dates as date}
-            {#each ($timeTable[date.toISODate()!]?.[timeSlot] ?? []) as slot, _slotIdx (slotKey(slot, _slotIdx))}
+            {#each $timeTable[date.toISODate()!]?.[timeSlot] ?? [] as slot, _slotIdx (slotKey(slot, _slotIdx))}
               {#if slot.empty}
                 {#if slot.filler}
                   <td class="placeholder" rowspan="1"><!--1--></td>
@@ -102,7 +111,7 @@
 <style>
   table {
     border-collapse: collapse;
-    border: 1px solid black;
+    border: 1px solid var(--border);
     width: 100%;
   }
 
@@ -117,7 +126,7 @@
   }
 
   .placeholder {
-    border: 1px solid black;
+    border: 1px solid var(--border);
     align-items: center;
     justify-content: center;
     font-size: 1.5em;
@@ -125,12 +134,13 @@
   }
 
   .placeholder:hover {
-    background-color: #3a3a3a;
+    background-color: var(--surface-elevated);
   }
 
   td,
   th {
-    border: 1px solid black;
+    border: 1px solid var(--border);
+    background-color: var(--surface);
   }
 
   th.timefield {

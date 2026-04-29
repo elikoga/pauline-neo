@@ -17,9 +17,7 @@
   // after semester B's courses are loaded.
   $: broken =
     Object.keys($freshCourseCids).length > 0 &&
-    !Object.values($freshCourseCids).some((s) =>
-      s.has(timetableSlot.appointment.collection.cid)
-    );
+    !Object.values($freshCourseCids).some((s) => s.has(timetableSlot.appointment.collection.cid));
 
   $: color = $getAppointmentsColor(timetableSlot.appointment.collection);
 
@@ -42,7 +40,9 @@
     rowSpan: number;
   };
   const openModal = () => {
-    $modalStore = bind(AppointmentModal, { appointment: timetableSlot.appointment }) as ComponentType;
+    $modalStore = bind(AppointmentModal, {
+      appointment: timetableSlot.appointment
+    }) as ComponentType;
   };
 </script>
 
@@ -56,14 +56,18 @@
     >x</button
   >
   {#if broken}
-    <span class="broken-icon" title="Termindaten veraltet – dieser Kurs wurde vom System aktualisiert und konnte nicht automatisch ersetzt werden">⚠</span>
+    <span
+      class="broken-icon"
+      title="Termindaten veraltet – dieser Kurs wurde vom System aktualisiert und konnte nicht automatisch ersetzt werden"
+      >⚠</span
+    >
   {/if}
   {timetableSlot.appointment.name}
 </td>
 
 <style>
   td {
-    border: 1px solid black;
+    border: 1px solid var(--border);
     height: 100px;
     position: relative;
   }
@@ -86,19 +90,19 @@
     position: absolute;
     width: 28px;
     height: 28px;
-    background-color: rgba(70, 70, 70, 0.7);
+    background-color: rgba(15, 23, 42, 0.78);
     right: 0;
     top: 0;
   }
   .broken {
-    outline: 2px solid #f59e0b;
+    outline: 2px solid var(--warning);
     outline-offset: -2px;
   }
 
   .broken-icon {
     display: block;
     font-size: 1rem;
-    color: #f59e0b;
+    color: var(--warning);
     line-height: 1;
     margin-bottom: 2px;
   }

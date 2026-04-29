@@ -19,7 +19,11 @@ const config = {
         primary: 'var(--primary)',
         secondary: 'var(--secondary)',
         background: 'var(--background)',
-        link: 'var(--link)'
+        surface: 'var(--surface)',
+        'surface-elevated': 'var(--surface-elevated)',
+        border: 'var(--border)',
+        link: 'var(--link)',
+        muted: 'var(--text-muted)'
       },
       spacing: {
         128: '32rem',

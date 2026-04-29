@@ -112,7 +112,7 @@
     }
   }}
 >
-  <div class="bg-background h-full">
+  <div class="bg-surface h-full border-r border-border">
     <Search />
   </div>
 </aside>

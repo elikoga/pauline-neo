@@ -21,7 +21,7 @@
       <h1 class="text-4xl font-bold text-white ml-3">Pauline</h1>
     </div>
     <div
-      class="question-circle bar-content ml-auto rounded-full border-2"
+      class="question-circle bar-content ml-auto rounded-full border-2 border-border"
       on:click={() => ($modalStore = InfoModal)}
     >
       ?
@@ -33,7 +33,8 @@
   .bar {
     width: 100%;
     height: var(--header-height);
-    background-color: var(--primary);
+    background: linear-gradient(90deg, var(--primary), hsl(214, 38%, 22%));
+    border-bottom: 1px solid var(--border);
   }
 
   .bar-content {
@@ -52,6 +53,7 @@
     margin-right: 0.25rem;
     text-align: center;
     font-size: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.04);
   }
 
   .question-circle:hover {
