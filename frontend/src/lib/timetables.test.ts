@@ -172,14 +172,14 @@ describe('timetables', () => {
   });
 
   describe('mergeActiveIds', () => {
-    it('server overrides local for same semester', () => {
+    it('local overrides server for same semester', () => {
       const local = { 'Sommer 2026': 'local-id', 'Winter 2025/26': 'winter-local' };
       const server = { 'Sommer 2026': 'server-id' };
 
       const result = mergeActiveIds(local, server);
 
       expect(result).toEqual({
-        'Sommer 2026': 'server-id',
+        'Sommer 2026': 'local-id',
         'Winter 2025/26': 'winter-local'
       });
     });
