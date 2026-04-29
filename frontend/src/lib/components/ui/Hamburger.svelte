@@ -8,6 +8,7 @@
 <button
   class="text-link cursor-pointer mr-4 border-none focus:outline-none"
   class:open
+  aria-label={open ? 'Seitenleiste schließen' : 'Seitenleiste öffnen'}
   on:click={(evt) => {
     open = !open;
     dispatch('click', evt);

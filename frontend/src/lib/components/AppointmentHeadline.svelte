@@ -20,6 +20,13 @@
     }
   };
 
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleRealAppointments();
+    }
+  };
+
   const togglePreviewAppointments = () => {
     if (allAppointmentsActive) {
       setPreviewAppointmentsNotActive();
@@ -56,9 +63,13 @@
 <div
   class:allAppointmentsActive
   class="text-s font-semibold text-slate-400 uppercase text-link info"
+  role="button"
+  tabindex="0"
   on:click={toggleRealAppointments}
+  on:keydown={handleKeydown}
   on:mouseenter={togglePreviewAppointments}
   on:mouseleave={setPreviewAppointmentsNotActive}
+  aria-pressed={allAppointmentsActive}
 >
   {title}
 </div>

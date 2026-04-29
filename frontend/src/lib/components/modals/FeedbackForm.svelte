@@ -53,7 +53,7 @@
       cols="50"
       class="border border-gray-400 px-4 py-2 mb-4"
       placeholder="Dein Feedback"
-    />
+    ></textarea>
     <Button
       class="mb-2"
       on:click={() => {

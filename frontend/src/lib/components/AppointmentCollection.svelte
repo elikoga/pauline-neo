@@ -39,6 +39,13 @@
     }
   };
 
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleAppointments();
+    }
+  };
+
   $: color = $getAppointmentsColor(data);
 
   $: times = [
@@ -70,10 +77,14 @@
   class:shown={locked || previewed}
   class:locked
   class="container"
+  role="button"
+  tabindex="0"
   on:mouseenter={previewShowAppointments}
   on:mouseleave={previewHideAppointments}
   on:click={toggleAppointments}
+  on:keydown={handleKeydown}
   style="--dark-color: {color[0]}; --light-color: {color[1]};"
+  aria-pressed={locked}
 >
   {data.name} | {times || 'ohne Termine'}
 </div>
