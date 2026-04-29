@@ -127,7 +127,7 @@ export const visibleTimetables = (timetables: SavedTimetable[]): SavedTimetable[
 export const mergeActiveIds = (
   local: Record<string, string>,
   server: Record<string, string>
-): Record<string, string> => ({ ...local, ...server });
+): Record<string, string> => ({ ...server, ...local });
 
 const loadServerStateIntoStores = (serverState: CalendarState): void => {
   savedTimetables.set(serverState.timetables);
