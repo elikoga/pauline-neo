@@ -10,16 +10,22 @@
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
   import ChangelogModal from '$lib/components/modals/ChangelogModal.svelte';
   import AuthModal from '$lib/components/modals/AuthModal.svelte';
+  import TimetablesModal from '$lib/components/modals/TimetablesModal.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
-  import { undo, redo, realAppointments } from '$lib/appointments';
-  import { cacheVersion, tryAutoReplaceAppointments } from '$lib/api';
+  import { registerAppointmentPersistence, undo, redo, realAppointments } from '$lib/appointments';
+  import { cacheVersion, semesterNameStore, tryAutoReplaceAppointments } from '$lib/api';
   import type { AppointmentCollection } from '$lib/api';
   import { browser } from '$app/environment';
   import SemesterSelector from '$lib/components/SemesterSelector.svelte';
+  import { ensureActiveTimetable, persistActiveTimetableAppointments } from '$lib/timetables';
 
   const appointments = writable([]);
   setContext('appointments', appointments);
+  if (browser) {
+    ensureActiveTimetable(get(semesterNameStore));
+    registerAppointmentPersistence(persistActiveTimetableAppointments);
+  }
 
   // Heal stale appointments (CID changed due to scraper hash updates) by finding
   // the unambiguous replacement.  Runs once on mount (to fix data from localStorage)
@@ -129,6 +135,11 @@
             on:click={() => {
               $modalStore = AuthModal;
             }}>Konto / Anmeldelink</Button
+          >
+          <Button
+            on:click={() => {
+              $modalStore = TimetablesModal;
+            }}>Stundenpläne</Button
           >
           <Button
             on:click={() => {

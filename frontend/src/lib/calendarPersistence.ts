@@ -1,9 +1,10 @@
 import { get } from 'svelte/store';
-import type { AppointmentCollection } from './api';
+import type { SavedTimetable } from './timetables';
 import { authState } from './auth';
 
 export type CalendarState = {
-  appointments: AppointmentCollection[];
+  activeTimetableIds: Record<string, string>;
+  timetables: SavedTimetable[];
 };
 
 const apiUrl = (path: string): URL => {
@@ -36,14 +37,14 @@ export const loadPersistedCalendar = async (): Promise<CalendarState | null> => 
   });
   if (response.status === 401) return null;
   if (!response.ok) {
-    throw new Error('Gespeicherter Kalender konnte nicht geladen werden.');
+    throw new Error('Gespeicherte Stundenpläne konnten nicht geladen werden.');
   }
 
   return (await response.json()) as CalendarState;
 };
 
 export const savePersistedCalendar = async (
-  appointments: AppointmentCollection[]
+  state: CalendarState
 ): Promise<CalendarState | null> => {
   if (!get(authState).token) return null;
 
@@ -53,11 +54,11 @@ export const savePersistedCalendar = async (
       ...authHeaders(),
       'content-type': 'application/json'
     },
-    body: JSON.stringify({ appointments })
+    body: JSON.stringify(state)
   });
   if (response.status === 401) return null;
   if (!response.ok) {
-    throw new Error('Kalender konnte nicht gespeichert werden.');
+    throw new Error('Stundenpläne konnten nicht gespeichert werden.');
   }
 
   return (await response.json()) as CalendarState;

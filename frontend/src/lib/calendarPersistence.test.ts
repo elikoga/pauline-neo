@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import { authState } from './auth';
 import { loadPersistedCalendar, savePersistedCalendar } from './calendarPersistence';
 import type { AppointmentCollection } from './api';
+import type { CalendarState } from './calendarPersistence';
 
 const appointment: AppointmentCollection = {
   cid: 'L.123.45678',
@@ -16,6 +17,19 @@ const appointment: AppointmentCollection = {
       end_time: '2026-04-13T11:00:00.000+02:00',
       room: 'C1',
       instructors: 'Ada Lovelace'
+    }
+  ]
+};
+
+const calendarState: CalendarState = {
+  activeTimetableIds: { 'Sommer 2026': 'timetable-1' },
+  timetables: [
+    {
+      id: 'timetable-1',
+      name: 'Sommer 2026 – Stundenplan',
+      semesterName: 'Sommer 2026',
+      appointments: [appointment],
+      updatedAt: '2026-04-29T00:00:00.000Z'
     }
   ]
 };
@@ -36,11 +50,11 @@ describe('calendarPersistence', () => {
 
   it('does not call the API without an authenticated account', async () => {
     expect(await loadPersistedCalendar()).toBeNull();
-    expect(await savePersistedCalendar([appointment])).toBeNull();
+    expect(await savePersistedCalendar(calendarState)).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('loads the authenticated account calendar', async () => {
+  it('loads the authenticated account timetables', async () => {
     authState.set({
       token: 'secret-token',
       account: {
@@ -49,15 +63,15 @@ describe('calendarPersistence', () => {
         created_at: '2026-04-29T00:00:00'
       }
     });
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ appointments: [appointment] }));
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(calendarState));
 
-    await expect(loadPersistedCalendar()).resolves.toEqual({ appointments: [appointment] });
+    await expect(loadPersistedCalendar()).resolves.toEqual(calendarState);
     expect(fetch).toHaveBeenCalledWith(expect.any(URL), {
       headers: { authorization: 'Bearer secret-token' }
     });
   });
 
-  it('saves the authenticated account calendar', async () => {
+  it('saves the authenticated account timetables', async () => {
     authState.set({
       token: 'secret-token',
       account: {
@@ -66,9 +80,9 @@ describe('calendarPersistence', () => {
         created_at: '2026-04-29T00:00:00'
       }
     });
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ appointments: [appointment] }));
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(calendarState));
 
-    await expect(savePersistedCalendar([appointment])).resolves.toEqual({ appointments: [appointment] });
+    await expect(savePersistedCalendar(calendarState)).resolves.toEqual(calendarState);
     expect(fetch).toHaveBeenCalledWith(
       expect.any(URL),
       expect.objectContaining({
@@ -77,7 +91,7 @@ describe('calendarPersistence', () => {
           authorization: 'Bearer secret-token',
           'content-type': 'application/json'
         },
-        body: JSON.stringify({ appointments: [appointment] })
+        body: JSON.stringify(calendarState)
       })
     );
     expect(get(authState).token).toBe('secret-token');

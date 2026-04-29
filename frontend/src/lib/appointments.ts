@@ -1,11 +1,9 @@
-import { writable, derived, readonly, get } from 'svelte/store';
+import { writable, derived, readonly } from 'svelte/store';
 import type { Appointment, AppointmentCollection } from './api';
 import { DateTime } from 'luxon';
 import { colorCount, colors } from '$lib/colors';
 import { writableLocalStorageStore } from './localStorageStore';
 import { fromISO } from './fromISOcache';
-import { authState } from './auth';
-import { loadPersistedCalendar, savePersistedCalendar } from './calendarPersistence';
 import type { Interval } from 'luxon';
 
 // toISODate() returns string|null in Luxon 3; all dates here are constructed from
@@ -21,9 +19,6 @@ export const realAppointments = writableLocalStorageStore<AppointmentCollection[
 let realAppointmentsHistory: AppointmentCollection[][] = [];
 let redoHistory: AppointmentCollection[][] = [];
 
-let loadedAccountId: number | null = null;
-let applyingPersistedCalendar = false;
-let savePersistedCalendarTimer: NodeJS.Timeout | undefined;
 const UNDOHISTORYLIMIT = 50;
 
 const canUndoWritable = writable(false);
@@ -36,42 +31,25 @@ const updateUndoRedoState = (): void => {
   canRedoWritable.set(redoHistory.length > 0);
 };
 
-const schedulePersistedCalendarSave = (appointments: AppointmentCollection[]): void => {
-  if (applyingPersistedCalendar || !get(authState).token) return;
+let persistActiveTimetableAppointments: (() => void) | undefined;
 
-  if (savePersistedCalendarTimer) {
-    clearTimeout(savePersistedCalendarTimer);
-  }
-
-  savePersistedCalendarTimer = setTimeout(() => {
-    savePersistedCalendar(appointments).catch((error) => {
-      console.error('Failed to persist calendar:', error);
-    });
-  }, 500);
+export const registerAppointmentPersistence = (persist: () => void): void => {
+  persistActiveTimetableAppointments = persist;
 };
 
-authState.subscribe(async ($authState) => {
-  const accountId = $authState.account?.id ?? null;
-  if (!accountId || !$authState.token) {
-    loadedAccountId = null;
-    return;
+let skipNextPersistence = false;
+
+export const replaceRealAppointments = (
+  appointments: AppointmentCollection[],
+  options: { resetHistory?: boolean } = {}
+): void => {
+  skipNextPersistence = true;
+  if (options.resetHistory) {
+    realAppointmentsHistory = [];
+    redoHistory = [];
   }
-  if (loadedAccountId === accountId) return;
-
-  loadedAccountId = accountId;
-  try {
-    const persistedCalendar = await loadPersistedCalendar();
-    if (!persistedCalendar) return;
-
-    applyingPersistedCalendar = true;
-    realAppointments.set(persistedCalendar.appointments);
-    applyingPersistedCalendar = false;
-  } catch (error) {
-    applyingPersistedCalendar = false;
-    console.error('Failed to load persisted calendar:', error);
-  }
-});
-
+  realAppointments.set(appointments);
+};
 
 realAppointments.subscribe(($realAppointments) => {
   realAppointmentsHistory = [...realAppointmentsHistory, $realAppointments].slice(
@@ -79,7 +57,11 @@ realAppointments.subscribe(($realAppointments) => {
   );
   redoHistory = [];
   updateUndoRedoState();
-  schedulePersistedCalendarSave($realAppointments);
+  if (skipNextPersistence) {
+    skipNextPersistence = false;
+  } else {
+    persistActiveTimetableAppointments?.();
+  }
 });
 
 export const undo = (): void => {
@@ -196,36 +178,41 @@ export const howManyAppointmentsOverlap = derived<
   ([$dates, $appointmentsFilteredByDate, $relevantTimeSlots]) => {
     // for each date, for each time slot, count how many appointments overlap
     // return the maximum for each date
-    return $dates.reduce((acc, date) => {
-      const dateString = isoDate(date);
-      const appointments = $appointmentsFilteredByDate.filter((appointment) => {
-        // appointment.start_time is a string in the format "2020-09-01T12:00:00.000Z"
-        // it should be converted to a Date object
-        // then check if the day of the appointment is the same as the day of any of the dates
-        const appointmentDate = fromISO(appointment.start_time);
-        return isoDate(appointmentDate) === dateString;
-      });
-      // timeslots may overlap weirdly so:
-      // 11-13
-      // 12-14
-      // overlaps ( from 12-14 ).
-
-      const timeSlotCounts = $relevantTimeSlots.map((timeSlot) => {
-        const [startTime, endTime] = timeSlot.split('-');
-        const startTimeDate = fromISO(`${dateString}T${startTime}:00.000`);
-        const endTimeDate = fromISO(`${dateString}T${endTime}:00.000`);
-        const timeslotInterval = startTimeDate.until(endTimeDate);
-        const appointmentsOverlappingTimeSlot = appointments.filter((appointment) => {
-          const appointmentStartTimeDate = fromISO(appointment.start_time);
-          const appointmentEndTimeDate = fromISO(appointment.end_time);
-          const appointmentInterval = appointmentStartTimeDate.until(appointmentEndTimeDate);
-          return (appointmentInterval as Interval<true>).overlaps(timeslotInterval as Interval<true>);
+    return $dates.reduce(
+      (acc, date) => {
+        const dateString = isoDate(date);
+        const appointments = $appointmentsFilteredByDate.filter((appointment) => {
+          // appointment.start_time is a string in the format "2020-09-01T12:00:00.000Z"
+          // it should be converted to a Date object
+          // then check if the day of the appointment is the same as the day of any of the dates
+          const appointmentDate = fromISO(appointment.start_time);
+          return isoDate(appointmentDate) === dateString;
         });
-        return appointmentsOverlappingTimeSlot.length;
-      });
-      acc[dateString] = Math.max(0, ...timeSlotCounts);
-      return acc;
-    }, {} as Record<string /* dates */, number /* appointments that overlap */>);
+        // timeslots may overlap weirdly so:
+        // 11-13
+        // 12-14
+        // overlaps ( from 12-14 ).
+
+        const timeSlotCounts = $relevantTimeSlots.map((timeSlot) => {
+          const [startTime, endTime] = timeSlot.split('-');
+          const startTimeDate = fromISO(`${dateString}T${startTime}:00.000`);
+          const endTimeDate = fromISO(`${dateString}T${endTime}:00.000`);
+          const timeslotInterval = startTimeDate.until(endTimeDate);
+          const appointmentsOverlappingTimeSlot = appointments.filter((appointment) => {
+            const appointmentStartTimeDate = fromISO(appointment.start_time);
+            const appointmentEndTimeDate = fromISO(appointment.end_time);
+            const appointmentInterval = appointmentStartTimeDate.until(appointmentEndTimeDate);
+            return (appointmentInterval as Interval<true>).overlaps(
+              timeslotInterval as Interval<true>
+            );
+          });
+          return appointmentsOverlappingTimeSlot.length;
+        });
+        acc[dateString] = Math.max(0, ...timeSlotCounts);
+        return acc;
+      },
+      {} as Record<string /* dates */, number /* appointments that overlap */>
+    );
   }
 );
 
@@ -233,10 +220,10 @@ type TimeTable = {
   [date: string]: {
     [timeSlot: string]: (
       | {
-        empty: false;
-        appointment: AnnotatedAppointment;
-        rowSpan: number;
-      }
+          empty: false;
+          appointment: AnnotatedAppointment;
+          rowSpan: number;
+        }
       | { empty: true; filler: boolean }
     )[];
   };
@@ -319,9 +306,11 @@ export const timeTable = derived<
         // overlaps is max appointments at each timeslot for that date
         const overlaps = Math.max(
           ...$relevantTimeSlots.map((timeSlot) => {
-            const appointments = (timeTableCol[timeSlot] ?? []).filter((appointment: TimeTable[string][string][number]) => {
-              return appointment;
-            });
+            const appointments = (timeTableCol[timeSlot] ?? []).filter(
+              (appointment: TimeTable[string][string][number]) => {
+                return appointment;
+              }
+            );
             return appointments.length;
           })
         );

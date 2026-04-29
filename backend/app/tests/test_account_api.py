@@ -43,54 +43,86 @@ def test_find_account_by_email_normalizes_email():
     assert session.query_stub.filtered_email == "user@mail.upb.de"
 
 
-
 class AccountStub:
     def __init__(self, calendar_state):
         self.calendar_state = calendar_state
 
 
-def test_calendar_state_defaults_to_empty_appointments():
+def test_calendar_state_defaults_to_empty_timetables():
     state = _calendar_state(AccountStub(None))
 
-    assert state.appointments == []
+    assert state.activeTimetableIds == {}
+    assert state.timetables == []
 
 
-def test_calendar_state_preserves_course_and_small_group_shapes():
+def test_calendar_state_preserves_timetable_course_and_small_group_shapes():
     raw_state = {
-        "appointments": [
+        "activeTimetableIds": {"Sommer 2026": "timetable-1"},
+        "timetables": [
             {
-                "cid": "L.123.45678",
-                "name": "Vorlesung",
-                "description": "Beschreibung",
-                "ou": None,
-                "instructors": "Prof. Example",
+                "id": "timetable-1",
+                "name": "Sommer 2026 – Stundenplan",
+                "semesterName": "Sommer 2026",
+                "updatedAt": "2026-04-29T00:00:00.000Z",
                 "appointments": [
                     {
-                        "start_time": "2026-04-13T09:00:00",
-                        "end_time": "2026-04-13T11:00:00",
-                        "room": "C1",
+                        "cid": "L.123.45678",
+                        "name": "Vorlesung",
+                        "description": "Beschreibung",
+                        "ou": None,
                         "instructors": "Prof. Example",
-                    }
+                        "appointments": [
+                            {
+                                "start_time": "2026-04-13T09:00:00",
+                                "end_time": "2026-04-13T11:00:00",
+                                "room": "C1",
+                                "instructors": "Prof. Example",
+                            }
+                        ],
+                        "small_groups": [],
+                    },
+                    {
+                        "cid": "L.123.45678",
+                        "name": "Gruppe 1",
+                        "appointments": [],
+                    },
                 ],
-                "small_groups": [],
-            },
-            {
-                "cid": "L.123.45678",
-                "name": "Gruppe 1",
-                "appointments": [],
-            },
-        ]
+            }
+        ],
     }
 
     state = _calendar_state(AccountStub(raw_state))
 
-    assert len(state.appointments) == 2
-    assert state.appointments[0].dict()["description"] == "Beschreibung"
-    assert state.appointments[1].dict() == {
+    assert state.activeTimetableIds == {"Sommer 2026": "timetable-1"}
+    assert len(state.timetables) == 1
+    assert len(state.timetables[0].appointments) == 2
+    assert state.timetables[0].appointments[0].dict()["description"] == "Beschreibung"
+    assert state.timetables[0].appointments[1].dict() == {
         "cid": "L.123.45678",
         "name": "Gruppe 1",
         "appointments": [],
     }
+
+
+def test_calendar_state_migrates_old_candidate_shape():
+    raw_state = {
+        "activeCandidateIds": {"Sommer 2026": "candidate-1"},
+        "candidates": [
+            {
+                "id": "candidate-1",
+                "name": "Alter Plan",
+                "semesterName": "Sommer 2026",
+                "updatedAt": "2026-04-29T00:00:00.000Z",
+                "appointments": [],
+            }
+        ],
+    }
+
+    state = _calendar_state(AccountStub(raw_state))
+
+    assert state.activeTimetableIds == {"Sommer 2026": "candidate-1"}
+    assert len(state.timetables) == 1
+    assert state.timetables[0].name == "Alter Plan"
 
 
 class AccountTokenStub:

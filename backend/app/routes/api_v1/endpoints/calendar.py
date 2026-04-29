@@ -9,8 +9,17 @@ from app.routes.api_v1.endpoints.accounts import require_current_account
 router = APIRouter()
 
 
+def _migrate_calendar_state(raw_state):
+    migrated = dict(raw_state or {})
+    if "activeTimetableIds" not in migrated and "activeCandidateIds" in migrated:
+        migrated["activeTimetableIds"] = migrated["activeCandidateIds"]
+    if "timetables" not in migrated and "candidates" in migrated:
+        migrated["timetables"] = migrated["candidates"]
+    return migrated
+
+
 def _calendar_state(account: models.UserAccount) -> schemas.CalendarState:
-    raw_state = account.calendar_state or {}
+    raw_state = _migrate_calendar_state(account.calendar_state)
     return schemas.CalendarState.parse_obj(raw_state)
 
 
