@@ -20,12 +20,14 @@
       <img class="w-8 h-8 ml-3" src="https://fsmi.uni-paderborn.de/images/pi_taste.png" alt="" />
       <h1 class="text-4xl font-bold text-white ml-3">Pauline</h1>
     </div>
-    <div
+    <button
+      type="button"
       class="question-circle bar-content ml-auto rounded-full border-2"
       on:click={() => ($modalStore = InfoModal)}
+      aria-label="Informationen zu Pauline"
     >
       ?
-    </div>
+    </button>
   </div>
 </div>
 

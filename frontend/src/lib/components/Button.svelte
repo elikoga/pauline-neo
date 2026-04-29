@@ -5,12 +5,12 @@
   export { cls as class };
 </script>
 
-<div class={cls} on:click={(evt) => dispatch('click', evt)}>
+<button type="button" class={cls} on:click={(evt) => dispatch('click', evt)}>
   <span><slot>Click me!</slot></span>
-</div>
+</button>
 
 <style>
-  div {
+  button {
     /* button */
     /* fallback to primary blue */
     background-color: var(--primary);
@@ -26,7 +26,7 @@
     /* light shadow */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
-  div:hover {
+  button:hover {
     filter: brightness(85%);
   }
   span {
