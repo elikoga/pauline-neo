@@ -4,6 +4,7 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import uvicorn.logging
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
@@ -13,6 +14,16 @@ from fastapi.openapi.utils import get_openapi
 from app.config import api_settings
 from app.routes import frontend as frontend_module
 from app.routes.api_v1.api import api_router
+
+# Configure root logger with uvicorn-compatible formatter before any
+# application code logs.  Matches the pattern used by thymis.
+_ch = logging.StreamHandler()
+_ch.setLevel(logging.INFO)
+_formatter = uvicorn.logging.DefaultFormatter(
+    fmt="%(levelprefix)s %(asctime)s: %(name)s: %(message)s"
+)
+_ch.setFormatter(_formatter)
+logging.basicConfig(level=logging.INFO, handlers=[_ch])
 
 logger = logging.getLogger(__name__)
 
