@@ -47,16 +47,15 @@ def replace_calendar_state(
     session: Session = Depends(get_session),
 ):
     existing = _calendar_state(current_account)
-    # Merge incoming state with existing (incoming wins for conflicts)
-    merged = existing.dict()
-    merged.update(state.dict())
+    existing_state = existing.dict()
+    incoming_state = state.dict()
+    merged = {**existing_state, **incoming_state}
     # Merge timetables by id (incoming replaces existing by id)
-    if "timetables" in state.dict():
-        by_id = {t.id: t for t in existing.timetables}
-        for t in state.timetables:
-            by_id[t.id] = t
-        merged["timetables"] = list(by_id.values())
-    current_account.calendar_state = merged
+    if 'timetables' in incoming_state:
+        existing_by_id = {t['id']: t for t in existing_state.get('timetables', [])}
+        for t in incoming_state['timetables']:
+            existing_by_id[t['id']] = t
+        merged['timetables'] = list(existing_by_id.values())
     current_account.calendar_state = merged
     session.add(current_account)
     session.commit()
