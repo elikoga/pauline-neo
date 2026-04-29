@@ -2,7 +2,10 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -18,8 +21,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def perform_db_upgrade():
+    alembic_ini = Path(__file__).resolve().parents[1] / "alembic.ini"
+    alembic_cfg = Config(str(alembic_ini))
+    alembic_cfg.set_main_option("script_location", str(alembic_ini.parent / "alembic"))
+    logger.info("running database migrations")
+    command.upgrade(alembic_cfg, "head")
+    logger.info("database migrations complete")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    perform_db_upgrade()
     logger.info("starting frontend")
     await frontend_module.frontend.run()
     logger.info("frontend ready at %s", api_settings.BASE_URL)
