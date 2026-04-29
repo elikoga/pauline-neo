@@ -6,4 +6,4 @@ from .course import (
     course_appointment_table,
     small_group_appointment_table,
 )
-from .account import UserAccount, UserAccountSession
+from .account import UserAccount, UserAccountSession, Timetable, ActiveTimetable

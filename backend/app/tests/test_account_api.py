@@ -43,55 +43,98 @@ def test_find_account_by_email_normalizes_email():
     assert session.query_stub.filtered_email == "user@mail.upb.de"
 
 
+import datetime as _dt
+
+from app.data.storage.models import Timetable as _TimetableModel, ActiveTimetable as _ActiveModel
+
 class AccountStub:
     def __init__(self, calendar_state):
         self.calendar_state = calendar_state
+        self.id = 1
+
+
+class TimetableStub:
+    def __init__(self, id, name, semester_name, appointments, updated_at, order=None, deleted=False):
+        self.id = id
+        self.name = name
+        self.semester_name = semester_name
+        self.appointments = appointments
+        self.updated_at = updated_at
+        self.order = order
+        self.deleted = deleted
+
+
+class ActiveTimetableStub:
+    def __init__(self, semester_name, timetable_id):
+        self.semester_name = semester_name
+        self.timetable_id = timetable_id
+
+
+class _MockQuery:
+    def __init__(self, results):
+        self._results = results
+
+    def filter(self, *args):
+        return self
+
+    def all(self):
+        return self._results
+
+
+class CalendarSessionStub:
+    def __init__(self, timetables=None, active_timetables=None):
+        self._tt = timetables or []
+        self._active = active_timetables or []
+
+    def query(self, model):
+        if model is _TimetableModel:
+            return _MockQuery(self._tt)
+        if model is _ActiveModel:
+            return _MockQuery(self._active)
+        return _MockQuery([])
 
 
 def test_calendar_state_defaults_to_empty_timetables():
-    state = _calendar_state(AccountStub(None))
+    state = _calendar_state(AccountStub(None), CalendarSessionStub())
 
     assert state.activeTimetableIds == {}
     assert state.timetables == []
 
 
 def test_calendar_state_preserves_timetable_course_and_small_group_shapes():
-    raw_state = {
-        "activeTimetableIds": {"Sommer 2026": "timetable-1"},
-        "timetables": [
-            {
-                "id": "timetable-1",
-                "name": "Sommer 2026 – Stundenplan",
-                "semesterName": "Sommer 2026",
-                "updatedAt": "2026-04-29T00:00:00.000Z",
-                "appointments": [
-                    {
-                        "cid": "L.123.45678",
-                        "name": "Vorlesung",
-                        "description": "Beschreibung",
-                        "ou": None,
-                        "instructors": "Prof. Example",
-                        "appointments": [
-                            {
-                                "start_time": "2026-04-13T09:00:00",
-                                "end_time": "2026-04-13T11:00:00",
-                                "room": "C1",
-                                "instructors": "Prof. Example",
-                            }
-                        ],
-                        "small_groups": [],
-                    },
-                    {
-                        "cid": "L.123.45678",
-                        "name": "Gruppe 1",
-                        "appointments": [],
-                    },
-                ],
-            }
-        ],
-    }
+    appointments = [
+        {
+            "cid": "L.123.45678",
+            "name": "Vorlesung",
+            "description": "Beschreibung",
+            "ou": None,
+            "instructors": "Prof. Example",
+            "appointments": [
+                {
+                    "start_time": "2026-04-13T09:00:00",
+                    "end_time": "2026-04-13T11:00:00",
+                    "room": "C1",
+                    "instructors": "Prof. Example",
+                }
+            ],
+            "small_groups": [],
+        },
+        {
+            "cid": "L.123.45678",
+            "name": "Gruppe 1",
+            "appointments": [],
+        },
+    ]
+    tt = TimetableStub(
+        id="timetable-1",
+        name="Sommer 2026 \u2013 Stundenplan",
+        semester_name="Sommer 2026",
+        appointments=appointments,
+        updated_at=_dt.datetime(2026, 4, 29),
+    )
+    active = ActiveTimetableStub(semester_name="Sommer 2026", timetable_id="timetable-1")
 
-    state = _calendar_state(AccountStub(raw_state))
+    state = _calendar_state(AccountStub(None), CalendarSessionStub([tt], [active]))
 
     assert state.activeTimetableIds == {"Sommer 2026": "timetable-1"}
     assert len(state.timetables) == 1
@@ -104,26 +147,21 @@ def test_calendar_state_preserves_timetable_course_and_small_group_shapes():
     }
 
 
-def test_calendar_state_migrates_old_candidate_shape():
-    raw_state = {
-        "activeCandidateIds": {"Sommer 2026": "candidate-1"},
-        "candidates": [
-            {
-                "id": "candidate-1",
-                "name": "Alter Plan",
-                "semesterName": "Sommer 2026",
-                "updatedAt": "2026-04-29T00:00:00.000Z",
-                "appointments": [],
-            }
-        ],
-    }
+def test_calendar_state_returns_timetable_data_from_tables():
+    tt = TimetableStub(
+        id="candidate-1",
+        name="Alter Plan",
+        semester_name="Sommer 2026",
+        appointments=[],
+        updated_at=_dt.datetime(2026, 4, 29),
+    )
+    active = ActiveTimetableStub(semester_name="Sommer 2026", timetable_id="candidate-1")
 
-    state = _calendar_state(AccountStub(raw_state))
+    state = _calendar_state(AccountStub(None), CalendarSessionStub([tt], [active]))
 
     assert state.activeTimetableIds == {"Sommer 2026": "candidate-1"}
     assert len(state.timetables) == 1
     assert state.timetables[0].name == "Alter Plan"
-
 
 class AccountTokenStub:
     def __init__(self):
