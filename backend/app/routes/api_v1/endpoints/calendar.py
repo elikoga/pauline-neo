@@ -1,5 +1,5 @@
 import datetime
-
+import json
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -83,7 +83,7 @@ def replace_calendar_state(
                 user_account_id=current_account.id,
                 name=tt.name,
                 semester_name=tt.semesterName,
-                appointments=[a.dict() for a in tt.appointments],
+                appointments=[json.loads(a.json()) for a in tt.appointments],
                 updated_at=updated_at,
                 order=tt.order,
                 deleted=tt.deleted,
