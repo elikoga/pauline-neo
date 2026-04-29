@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Compute preview label
         id: preview
@@ -60,3 +62,31 @@ jobs:
             sudo -n /run/current-system/sw/bin/pauline-preview \
             deploy "$LABEL" "$IMAGE"
           echo "Preview deployed at https://$LABEL.preview.new.pauline-upb.de"
+
+      - name: Publish preview URL
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_HOST: >
+            ${{ steps.preview.outputs.label }}.preview.new.pauline-upb.de
+        run: |
+          set -euo pipefail
+          PREVIEW_URL="https://$PREVIEW_HOST"
+          echo "::notice title=Pauline preview::$PREVIEW_URL"
+          {
+            echo "## Pauline preview"
+            echo
+            echo "Preview URL: $PREVIEW_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          PR_NUMBER=$(gh pr list \
+            --head "$BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr comment "$PR_NUMBER" \
+              --edit-last \
+              --create-if-none \
+              --body "Pauline preview deployed: $PREVIEW_URL"
+          fi
