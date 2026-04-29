@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
   import { verifyAccount } from '$lib/auth';
 
   let message = 'Anmeldelink wird geprüft…';
@@ -14,9 +13,8 @@
     }
 
     try {
-      const session = await verifyAccount(token);
-      message = `Angemeldet als ${session.account.email}.`;
-      setTimeout(() => goto('/'), 1000);
+      await verifyAccount(token);
+      window.location.href = '/';
     } catch (caught) {
       error = caught instanceof Error ? caught.message : 'Anmeldung fehlgeschlagen.';
     }
