@@ -29,13 +29,19 @@ const authHeaders = (): HeadersInit => {
   };
 };
 
+const clearAuthOn401 = (status: number): void => {
+  if (status === 401) {
+    authState.set({ account: null, token: null });
+  }
+};
+
 export const loadPersistedCalendar = async (): Promise<CalendarState | null> => {
   if (!get(authState).token) return null;
 
   const response = await fetch(apiUrl('/calendar'), {
     headers: authHeaders()
   });
-  if (response.status === 401) return null;
+  if (response.status === 401) { clearAuthOn401(response.status); return null; }
   if (!response.ok) {
     throw new Error('Gespeicherte Stundenpläne konnten nicht geladen werden.');
   }
@@ -56,7 +62,7 @@ export const savePersistedCalendar = async (
     },
     body: JSON.stringify(state)
   });
-  if (response.status === 401) return null;
+  if (response.status === 401) { clearAuthOn401(response.status); return null; }
   if (!response.ok) {
     throw new Error('Stundenpläne konnten nicht gespeichert werden.');
   }
