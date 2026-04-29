@@ -4,7 +4,7 @@
   import { getSemesters, semesterNameStore, type SemesterWithoutCoursesButId } from '$lib/api';
   import { replaceRealAppointments, realAppointments, startDate } from '$lib/appointments';
   import { fromISO } from '$lib/fromISOcache';
-  import { ensureActiveTimetable, persistActiveTimetableAppointments } from '$lib/timetables';
+  import { ensureActiveTimetable } from '$lib/timetables';
   import { get } from 'svelte/store';
   import type { DateTime } from 'luxon';
   import { onMount } from 'svelte';
@@ -38,7 +38,6 @@
 
   $: if (browser && lastSemesterName !== $semesterNameStore) {
     console.log('[Pauline] semester switch:', lastSemesterName, '->', $semesterNameStore, '| realAppointments:', get(realAppointments).length, 'appts');
-    persistActiveTimetableAppointments(lastSemesterName);
     const timetable = ensureActiveTimetable($semesterNameStore, []);
     console.log('[Pauline] after ensureActiveTimetable:', timetable.id, timetable.appointments.length, 'appts');
     replaceRealAppointments(timetable.appointments, { resetHistory: true });

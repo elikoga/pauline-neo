@@ -44,7 +44,7 @@ export const replaceRealAppointments = (
   appointments: AppointmentCollection[],
   options: { resetHistory?: boolean } = {}
 ): void => {
-  dbg('replaceRealAppointments:', appointments.length, 'appts, resetHistory:', options.resetHistory, new Error().stack);
+  dbg('replaceRealAppointments:', appointments.length, 'appts, resetHistory:', options.resetHistory);
   skipNextPersistence = true;
   if (options.resetHistory) {
     realAppointmentsHistory = [];
