@@ -30,6 +30,7 @@ export type SavedTimetable = {
   appointments: AppointmentCollection[];
   updatedAt: string;
   order?: number;
+  deleted?: boolean;
 };
 
 const timetableId = (): string => {
@@ -39,7 +40,7 @@ const timetableId = (): string => {
 
 const defaultTimetableNameFor = (semesterName: string, timetables: SavedTimetable[]): string => {
   const semesterTimetables = timetables.filter(
-    (timetable) => timetable.semesterName === semesterName
+    (timetable) => !timetable.deleted && timetable.semesterName === semesterName
   );
   const suffix = semesterTimetables.length === 0 ? '' : ` ${semesterTimetables.length + 1}`;
   return `${semesterName} – Stundenplan${suffix}`;
@@ -103,21 +104,25 @@ export const mergeTimetables = (
   server: SavedTimetable[]
 ): SavedTimetable[] => {
   const byId = new Map<string, SavedTimetable>();
-  for (const t of local) byId.set(t.id, { ...t });
-  for (const t of server) {
+  // Seed with server — it is authoritative for what exists across all devices.
+  for (const t of server) byId.set(t.id, { ...t });
+  // Apply local changes: keep local-only timetables (new creates, pending PUTs)
+  // and prefer the newer updatedAt for conflicts (tombstones included).
+  for (const t of local) {
     const existing = byId.get(t.id);
     if (!existing) {
       byId.set(t.id, { ...t });
     } else if (new Date(t.updatedAt) > new Date(existing.updatedAt)) {
-      // Server is newer - keep server version but preserve local order if server lacks it
       byId.set(t.id, { ...t, order: t.order ?? existing.order });
-    } else {
-      // Local is newer - keep local version
-      byId.set(t.id, { ...existing });
     }
+    // else: server is newer or same — keep server version
   }
   return Array.from(byId.values());
 };
+
+/** Filter out tombstones. Use this everywhere timetables are displayed or selected. */
+export const visibleTimetables = (timetables: SavedTimetable[]): SavedTimetable[] =>
+  timetables.filter((t) => !t.deleted);
 
 export const mergeActiveIds = (
   local: Record<string, string>,
@@ -197,7 +202,7 @@ export const defaultTimetableName = (
 export const timetablesForSemester = (
   timetables: SavedTimetable[],
   semesterName: string
-): SavedTimetable[] => timetables.filter((timetable) => timetable.semesterName === semesterName);
+): SavedTimetable[] => timetables.filter((timetable) => !timetable.deleted && timetable.semesterName === semesterName);
 
 export const activeTimetableIdForSemester = (semesterName: string): string | undefined =>
   get(activeTimetableIds)[semesterName];
@@ -205,7 +210,7 @@ export const activeTimetableIdForSemester = (semesterName: string): string | und
 export const activeTimetableForSemester = (semesterName: string): SavedTimetable | undefined => {
   const activeId = activeTimetableIdForSemester(semesterName);
   return get(savedTimetables).find(
-    (timetable) => timetable.semesterName === semesterName && timetable.id === activeId
+    (timetable) => !timetable.deleted && timetable.semesterName === semesterName && timetable.id === activeId
   );
 };
 
@@ -314,12 +319,21 @@ export const renameTimetable = (timetableId: string, name: string): void => {
 export const deleteTimetable = (timetableId: string): void => {
   const timetables = get(savedTimetables);
   const deleted = timetables.find((timetable) => timetable.id === timetableId);
-  if (!deleted) return;
+  if (!deleted || deleted.deleted) return;
 
-  const remaining = timetables.filter((timetable) => timetable.id !== timetableId);
-  savedTimetables.set(remaining);
+  // Mark as tombstone — preserves the record so cross-device sync propagates the deletion.
+  savedTimetables.update((tt) =>
+    tt.map((t) =>
+      t.id === timetableId
+        ? { ...t, deleted: true, updatedAt: new Date().toISOString() }
+        : t
+    )
+  );
 
-  const replacement = timetablesForSemester(remaining, deleted.semesterName)[0];
+  // Find replacement from visible (non-deleted) timetables for the same semester.
+  const replacement = timetables.find(
+    (t) => !t.deleted && t.id !== timetableId && t.semesterName === deleted.semesterName
+  );
   if (replacement) {
     activeTimetableIds.update((ids) => ({
       ...ids,

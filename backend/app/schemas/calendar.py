@@ -20,6 +20,7 @@ class SavedTimetable(BaseModel):
     appointments: List[CalendarCourse | CalendarSmallGroup] = []
     updatedAt: str
     order: int | None = None
+    deleted: bool = False
     @validator("appointments", pre=True)
     def parse_appointment_collections(cls, appointments):
         return [parse_calendar_appointment(appointment) for appointment in appointments]

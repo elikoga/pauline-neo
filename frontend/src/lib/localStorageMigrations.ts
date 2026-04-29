@@ -20,6 +20,7 @@ type SavedTimetable = {
   appointments: AppointmentCollection[];
   updatedAt: string;
   order?: number;
+  deleted?: boolean;
 };
 
 export const CURRENT_VERSION = 2;
