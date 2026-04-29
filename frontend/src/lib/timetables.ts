@@ -24,6 +24,7 @@ import {
   type CalendarState
 } from './calendarPersistence';
 import { runMigrations } from './localStorageMigrations';
+import { deviceIdentifier } from './device';
 
 export type SavedTimetable = {
   id: string;
@@ -45,7 +46,9 @@ const defaultTimetableNameFor = (semesterName: string, timetables: SavedTimetabl
     (timetable) => !timetable.deleted && timetable.semesterName === semesterName
   );
   const suffix = semesterTimetables.length === 0 ? '' : ` ${semesterTimetables.length + 1}`;
-  return `${semesterName} – Stundenplan${suffix}`;
+  const device = deviceIdentifier();
+  const deviceTag = device ? ` (${device})` : '';
+  return `${semesterName} – Stundenplan${suffix}${deviceTag}`;
 };
 
 const readLocalStorageJson = <T>(key: string): T | undefined => {
