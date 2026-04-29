@@ -1,0 +1,53 @@
+---
+name: Deploy branch preview
+
+"on":
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+jobs:
+  deploy-preview:
+    if: >
+      ${{ github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.head_branch != 'main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Compute branch slug
+        id: slug
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          SLUG=$(echo "$BRANCH" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed 's/[^a-z0-9]/-/g; s/-\+/-/g; s/^-//; s/-$//')
+          if [ -z "$SLUG" ]; then
+            echo "Branch '$BRANCH' produced an empty preview slug" >&2
+            exit 1
+          fi
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+
+      - name: Install SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PAULINE_PREVIEW_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 88.198.127.131 >> ~/.ssh/known_hosts
+
+      - name: Deploy preview container
+        env:
+          SLUG: ${{ steps.slug.outputs.slug }}
+          IMAGE: ghcr.io/${{ github.repository }}:${{ steps.slug.outputs.slug }}
+        run: |
+          set -euo pipefail
+          REMOTE='pauline-deploy@88.198.127.131'
+          ssh "$REMOTE" \
+            sudo -n /run/current-system/sw/bin/pauline-preview \
+            deploy "$SLUG" "$IMAGE"
+          echo "Preview deployed at https://$SLUG.new.pauline-upb.de"
