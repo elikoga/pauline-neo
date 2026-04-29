@@ -127,7 +127,7 @@
           <Button
             on:click={() => {
               $modalStore = ChangelogModal;
-            }}>Neu: Serientermine im Kalender-Export</Button
+            }}>Neu in Pauline</Button
           >
           <Button
             on:click={() => {
