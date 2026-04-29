@@ -87,7 +87,6 @@
         })
         .slice(0, 100); // limit to 100 results
     } else {
-      console.log('Searching for:', searchInput);
       const results = await localIndex.searchAsync(searchInput);
       // if signal is aborted, just return
       if (signal.aborted) return;

@@ -18,27 +18,27 @@ const reviver = (_key: unknown, value: unknown) => {
     'dataType' in value &&
     (value as { dataType: string }).dataType === 'Map'
   ) {
-    const map = new Map<unknown, unknown>((value as unknown as { value: [unknown, unknown][] }).value);
+    const map = new Map<unknown, unknown>(
+      (value as unknown as { value: [unknown, unknown][] }).value
+    );
     return map;
   } else {
     return value;
   }
 };
 
-export default class LocalStorageMap<K, V, MapType extends Map<K, V> = Map<K, V>>
-  implements Map<K, V>
-{
+export default class LocalStorageMap<K, V, MapType extends Map<K, V> = Map<K, V>> implements Map<
+  K,
+  V
+> {
   key: string;
   private map: MapType;
   // constructor takes localStorage key name as well as all other parameters
   constructor(
     key: string,
-    MapConstructor?: new <K1 extends K, V1 extends V>(entries?: readonly [K1, V1][] | null) => Map<
-      K1,
-      V1
-    > extends MapType
-      ? Map<K1, V1> | undefined
-      : MapType,
+    MapConstructor?: new <K1 extends K, V1 extends V>(
+      entries?: readonly [K1, V1][] | null
+    ) => Map<K1, V1> extends MapType ? Map<K1, V1> | undefined : MapType,
     entries?: readonly [K, V][] | null
   ) {
     const RealMapConstructor = (MapConstructor || Map) as new <K, V>(
@@ -49,11 +49,9 @@ export default class LocalStorageMap<K, V, MapType extends Map<K, V> = Map<K, V>
     if (typeof localStorage === 'undefined') {
       throw new Error('LocalStorage is not supported');
     }
-    console.log('initializing LocalStorageMap with key: ' + key);
     // check if we have the key in localStorage
     const json = localStorage.getItem(key);
     if (json) {
-      console.log('found key in localStorage');
       // if we do, parse the JSON string and set the map
       try {
         this.map = new RealMapConstructor<K, V>(JSON.parse(json, reviver));
@@ -62,7 +60,6 @@ export default class LocalStorageMap<K, V, MapType extends Map<K, V> = Map<K, V>
       }
       // console.log('map: ' + json);
     } else {
-      console.log('key not found in localStorage');
       // if we don't, create an empty map
       this.map = new RealMapConstructor(entries);
     }
@@ -74,7 +71,6 @@ export default class LocalStorageMap<K, V, MapType extends Map<K, V> = Map<K, V>
       clearTimeout(this.localStorageTimer);
     }
     this.localStorageTimer = setTimeout(() => {
-      console.log('setting localStorage key: ' + this.key);
       localStorage.setItem(this.key, JSON.stringify(this.map, replacer));
     }, 1000);
   };

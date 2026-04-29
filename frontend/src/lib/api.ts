@@ -32,7 +32,6 @@ export const getSemesters = async (): Promise<SemesterWithoutCoursesButId[]> => 
   if (semesterId === undefined) {
     semesterNameStore.set(semesters[semesters.length - 1].name);
     semesterId = semesters[semesters.length - 1].id;
-    console.log(`Setting semesterId to ${semesterId}`);
   }
   // set value to semesterResponse
   semesterResponse = semesters;
@@ -50,7 +49,6 @@ export const getSemesterId = async (): Promise<number> => {
 
 const getUrl = () => {
   const url = import.meta.env.VITE_PAULINE_API;
-  console.log(`I got the url: ${url}`);
   // our assertion is that this is set. If it isn't please set up
   // your environment variables.
   if (!url || url === true) {
@@ -101,7 +99,6 @@ export const getCourses = async (signal?: AbortSignal): Promise<CourseWithoutApp
   if (!browser) return [];
   const semesterId = await getSemesterId();
   const cacheKey = { semesterId };
-  console.log(`Getting courses for semester ${semesterId}, name ${semesterName}`);
   if (searchResultsCache.has(cacheKey)) {
     const cids = searchResultsCache.get(cacheKey) as string[];
     freshCourseCids.update((prev) => ({ ...prev, [semesterName]: new Set(cids) }));
@@ -255,7 +252,6 @@ export type ValidationError = {
   msg: string;
   type: string;
 };
-
 
 // Returns the "base" part of a CID: the portion before the '|' separator that
 // was introduced to disambiguate courses sharing the same university ID.
