@@ -14,10 +14,6 @@ from app.config import api_settings
 from app.routes import frontend as frontend_module
 from app.routes.api_v1.api import api_router
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 
