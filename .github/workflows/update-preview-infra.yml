@@ -15,10 +15,11 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Compute branch slug
-        id: slug
+      - name: Compute preview label
+        id: preview
         env:
           BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           SLUG=$(echo "$BRANCH" \
@@ -28,7 +29,13 @@ jobs:
             echo "Branch '$BRANCH' produced an empty preview slug" >&2
             exit 1
           fi
-          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          SLUG=$(printf '%s' "$SLUG" | cut -c1-48 | sed 's/-$//')
+          SECRET=$(printf '%s:%s' "$BRANCH" "$SHA" \
+            | sha256sum \
+            | cut -c1-12)
+          LABEL="$SLUG-$SECRET"
+          echo "label=$LABEL" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$SLUG" >> "$GITHUB_OUTPUT"
 
       - name: Install SSH key
         env:
@@ -42,12 +49,14 @@ jobs:
 
       - name: Deploy preview container
         env:
-          SLUG: ${{ steps.slug.outputs.slug }}
-          IMAGE: ghcr.io/${{ github.repository }}:${{ steps.slug.outputs.slug }}
+          LABEL: ${{ steps.preview.outputs.label }}
+          IMAGE_REPO: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ steps.preview.outputs.image_tag }}
         run: |
           set -euo pipefail
           REMOTE='pauline-deploy@88.198.127.131'
+          IMAGE="$IMAGE_REPO:$IMAGE_TAG"
           ssh "$REMOTE" \
             sudo -n /run/current-system/sw/bin/pauline-preview \
-            deploy "$SLUG" "$IMAGE"
-          echo "Preview deployed at https://$SLUG.new.pauline-upb.de"
+            deploy "$LABEL" "$IMAGE"
+          echo "Preview deployed at https://$LABEL.preview.new.pauline-upb.de"
