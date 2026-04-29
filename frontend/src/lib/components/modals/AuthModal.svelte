@@ -70,12 +70,10 @@
 </p>
 
 <div class="notice" class:strong={isPreferredUniMail}>
-  <strong>Empfohlen für Uni Paderborn:</strong>
-  Nutze am besten deine Uni-Mail wie <code>benutzername@mail.uni-paderborn.de</code> oder
-  <code>benutzername@campus.uni-paderborn.de</code>. Kurzformen wie
-  <code>benutzername@mail.upb.de</code> und <code>benutzername@campus.upb.de</code> gehen auch.
-  Angestellte können außerdem <code>vorname.nachname@uni-paderborn.de</code> oder
-  <code>vorname.nachname@upb.de</code> nutzen.
+  <strong>Empfohlen:</strong>
+  <code>benutzername@mail.uni-paderborn.de</code> oder
+  <code>benutzername@campus.uni-paderborn.de</code>.
+  Kurzformen wie <code>mail.upb.de</code> und <code>campus.upb.de</code> funktionieren auch.
 </div>
 
 
@@ -147,14 +145,16 @@
   }
 
   .notice {
-    border-left: 0.35rem solid var(--primary);
-    background: rgba(0, 0, 0, 0.04);
+    border-left: 2px solid var(--primary);
+    background: rgba(0, 0, 0, 0.025);
     margin: 1em 0;
-    padding: 0.75em 1em;
+    padding: 0.5em 0.75em;
+    font-size: 0.85em;
+    color: #64748b;
   }
 
   .notice.strong {
-    background: rgba(34, 197, 94, 0.12);
+    background: rgba(34, 197, 94, 0.06);
   }
 
   .hint {
