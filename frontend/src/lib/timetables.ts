@@ -215,8 +215,7 @@ export const activeTimetableForSemester = (semesterName: string): SavedTimetable
     (timetable) => !timetable.deleted && timetable.semesterName === semesterName && timetable.id === activeId
   );
 };
-
-export const ensureActiveTimetable = (semesterName: string): SavedTimetable => {
+export const ensureActiveTimetable = (semesterName: string, defaultAppointments: AppointmentCollection[] = get(realAppointments)): SavedTimetable => {
   const existing = activeTimetableForSemester(semesterName);
   if (existing) {
     dbg('ensureActiveTimetable:', semesterName, '-> found existing', existing.id, existing.appointments.length, 'appts');
@@ -235,10 +234,10 @@ export const ensureActiveTimetable = (semesterName: string): SavedTimetable => {
     id: timetableId(),
     name: defaultTimetableName(semesterName),
     semesterName,
-    appointments: get(realAppointments),
+    appointments: defaultAppointments,
     updatedAt: new Date().toISOString()
   };
-  dbg('ensureActiveTimetable:', semesterName, '-> CREATED new, inherited', created.appointments.length, 'appts from realAppointments');
+  dbg('ensureActiveTimetable:', semesterName, '-> CREATED new with', created.appointments.length, 'appts');
   savedTimetables.update((timetables) => [...timetables, created]);
   activeTimetableIds.update((ids) => ({ ...ids, [semesterName]: created.id }));
   return created;
