@@ -274,7 +274,7 @@ export const persistActiveTimetableAppointments = (semesterOverride?: string): v
     return;
   }
   const appointments = get(realAppointments);
-  dbg('persistActiveTimetableAppointments:', semesterName, '-> saving', appointments.length, 'appts to', active.id);
+  dbg('persistActiveTimetableAppointments:', semesterName, '-> saving', appointments.length, 'appts to', active.id, new Error().stack);
   savedTimetables.update((timetables) =>
     timetables.map((timetable) =>
       timetable.id === active.id
