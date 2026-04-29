@@ -258,7 +258,8 @@ export const ensureActiveTimetable = (semesterName: string, defaultAppointments:
     name: defaultTimetableName(semesterName),
     semesterName,
     appointments: defaultAppointments,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    order: nextOrder(get(savedTimetables))
   };
   dbg('ensureActiveTimetable:', semesterName, '-> CREATED new with', created.appointments.length, 'appts');
   savedTimetables.update((timetables) => [...timetables, created]);
@@ -300,6 +301,9 @@ export const switchTimetable = (timetableId: string): void => {
   replaceRealAppointments(timetable.appointments, { resetHistory: true });
 };
 
+const nextOrder = (timetables: SavedTimetable[]): number =>
+  Math.max(-1, ...timetables.filter((t) => !t.deleted).map((t) => t.order ?? -1)) + 1;
+
 export const createTimetable = (name?: string): SavedTimetable => {
   persistActiveTimetableAppointments();
   const semesterName = get(semesterNameStore);
@@ -308,7 +312,8 @@ export const createTimetable = (name?: string): SavedTimetable => {
     name: name?.trim() || defaultTimetableName(semesterName),
     semesterName,
     appointments: [],
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    order: nextOrder(get(savedTimetables))
   };
   savedTimetables.update((timetables) => [...timetables, created]);
   activeTimetableIds.update((ids) => ({ ...ids, [semesterName]: created.id }));
@@ -325,7 +330,8 @@ export const duplicateActiveTimetable = (): SavedTimetable => {
     name: `${active.name} Kopie`,
     semesterName,
     appointments: [...active.appointments],
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    order: nextOrder(get(savedTimetables))
   };
   savedTimetables.update((timetables) => [...timetables, created]);
   activeTimetableIds.update((ids) => ({ ...ids, [semesterName]: created.id }));
