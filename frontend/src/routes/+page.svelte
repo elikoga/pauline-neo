@@ -122,10 +122,8 @@
   <Header bind:sidebarOpen bind:sidebarLocked class="shrink-0 w-full z-40 drop-shadow-md" />
   <div class="flex gap-6 flex-row relative">
     <div class="timetable w-full m-2">
-      <div class="timetableheader grid grid-cols-2 gap-6 md:grid-cols-1 md:flex">
-        <div
-          class="grid grid-rows-2 gap-2 md:flex md:flex-row md:flex-wrap md:justify-end md:space-x-2"
-        >
+      <div class="timetableheader grid grid-cols-2 gap-3">
+        <div class="toolbar-group">
           <Button
             on:click={() => {
               $modalStore = ChangelogModal;
@@ -138,9 +136,7 @@
           >
           <SemesterSelector />
         </div>
-        <div
-          class="grid grid-rows-3 gap-2 md:flex md:flex-row md:flex-wrap md:justify-end md:space-x-2"
-        >
+        <div class="toolbar-group toolbar-group-right">
           <Button on:click={$exportCalendar}>Kalender Exportieren</Button>
           <Button on:click={importCalendar}>Kalender Importieren</Button>
           <Button
@@ -192,5 +188,37 @@
   .timetableheader {
     margin-bottom: 1rem;
     justify-content: space-between;
+  }
+
+  .toolbar-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    justify-items: stretch;
+    align-content: start;
+  }
+
+  .toolbar-group-right {
+    justify-content: end;
+  }
+
+  .toolbar-group :global(*) {
+    width: 100%;
+  }
+
+  @media screen and (min-width: 768px) {
+    .toolbar-group {
+      display: flex;
+      flex-flow: row wrap;
+      justify-content: flex-start;
+    }
+
+    .toolbar-group-right {
+      justify-content: flex-end;
+    }
+
+    .toolbar-group :global(*) {
+      width: auto;
+    }
   }
 </style>
