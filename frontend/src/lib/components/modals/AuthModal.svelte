@@ -116,14 +116,11 @@
   />
 
 
-  <Button
-    class="mb-2"
-    on:click={() => {
-      submit();
-    }}
-  >
-    {loading ? 'Bitte warten…' : 'Anmeldelink senden'}
-  </Button>
+<Button
+  class="mb-2"
+  type="submit"
+>  {loading ? 'Bitte warten…' : 'Anmeldelink senden'}
+</Button>
 </form>
 
 {#if error}
