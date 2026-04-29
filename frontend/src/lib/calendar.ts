@@ -26,7 +26,7 @@ Dozenten: ${appointment.instructors}
       ),
       x: [['X-PAULO-APPOINTMENTS', JSON.stringify($appointments)]]
     });
-    const blob = calendar.toBlob();
+    const blob = new Blob([calendar.toString()], { type: 'text/calendar;charset=utf-8' });
     const link = window.URL.createObjectURL(blob);
     const tempLink = document.createElement('a');
     tempLink.href = link;
