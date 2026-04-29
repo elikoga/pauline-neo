@@ -39,7 +39,7 @@
   };
 
   $: timetables = (() => {
-    const sorted = [...$savedTimetables];
+    const sorted = [...$savedTimetables.filter(t => !t.deleted)];
     const withOrder = sorted.filter(t => t.order !== undefined) as (SavedTimetable & { order: number })[];
     const withoutOrder = sorted.filter(t => t.order === undefined);
     // Sort by order (ascending), put items without order at the end
@@ -49,7 +49,7 @@
   })();
 
   const moveUp = (timetableId: string) => {
-    const list = $savedTimetables;
+    const list = $savedTimetables.filter(t => !t.deleted);
     const sorted = [...list].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
     const idx = sorted.findIndex(t => t.id === timetableId);
     if (idx <= 0) return; // already at top
@@ -64,7 +64,7 @@
   };
 
   const moveDown = (timetableId: string) => {
-    const list = $savedTimetables;
+    const list = $savedTimetables.filter(t => !t.deleted);
     const sorted = [...list].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
     const idx = sorted.findIndex(t => t.id === timetableId);
     if (idx === -1 || idx >= sorted.length - 1) return; // already at bottom
