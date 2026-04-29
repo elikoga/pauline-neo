@@ -264,7 +264,7 @@ describe('timetables', () => {
 
       runMigrations();
 
-      expect(readMigratedTimetables()).toEqual([oldTimetable]);
+      expect(readMigratedTimetables()).toEqual([{ ...oldTimetable, order: 0 }]);
       expect(readMigratedActiveIds()).toEqual({ 'Winter 2025/26': 'old-candidate' });
     });
 

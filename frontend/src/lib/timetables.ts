@@ -29,6 +29,7 @@ export type SavedTimetable = {
   semesterName: string;
   appointments: AppointmentCollection[];
   updatedAt: string;
+  order?: number;
 };
 
 const timetableId = (): string => {
@@ -102,11 +103,17 @@ export const mergeTimetables = (
   server: SavedTimetable[]
 ): SavedTimetable[] => {
   const byId = new Map<string, SavedTimetable>();
-  for (const t of local) byId.set(t.id, t);
+  for (const t of local) byId.set(t.id, { ...t });
   for (const t of server) {
     const existing = byId.get(t.id);
-    if (!existing || new Date(t.updatedAt) > new Date(existing.updatedAt)) {
-      byId.set(t.id, t);
+    if (!existing) {
+      byId.set(t.id, { ...t });
+    } else if (new Date(t.updatedAt) > new Date(existing.updatedAt)) {
+      // Server is newer - keep server version but preserve local order if server lacks it
+      byId.set(t.id, { ...t, order: t.order ?? existing.order });
+    } else {
+      // Local is newer - keep local version
+      byId.set(t.id, { ...existing });
     }
   }
   return Array.from(byId.values());

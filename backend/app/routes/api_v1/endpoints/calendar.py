@@ -46,7 +46,18 @@ def replace_calendar_state(
     current_account: models.UserAccount = Depends(require_current_account),
     session: Session = Depends(get_session),
 ):
-    current_account.calendar_state = state.dict()
+    existing = _calendar_state(current_account)
+    # Merge incoming state with existing (incoming wins for conflicts)
+    merged = existing.dict()
+    merged.update(state.dict())
+    # Merge timetables by id (incoming replaces existing by id)
+    if "timetables" in state.dict():
+        by_id = {t.id: t for t in existing.timetables}
+        for t in state.timetables:
+            by_id[t.id] = t
+        merged["timetables"] = list(by_id.values())
+    current_account.calendar_state = merged
+    current_account.calendar_state = merged
     session.add(current_account)
     session.commit()
     session.refresh(current_account)

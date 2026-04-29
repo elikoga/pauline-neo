@@ -10,6 +10,7 @@
 import { get } from 'svelte/store';
 import type { AppointmentCollection } from './api';
 import { semesterNameStore } from './api';
+import { sortTimetablesBySemester } from './semesterSort';
 
 // Local copy of SavedTimetable to avoid circular import with timetables.ts.
 type SavedTimetable = {
@@ -18,9 +19,10 @@ type SavedTimetable = {
   semesterName: string;
   appointments: AppointmentCollection[];
   updatedAt: string;
+  order?: number;
 };
 
-export const CURRENT_VERSION = 1;
+export const CURRENT_VERSION = 2;
 
 const VERSION_KEY = 'paulineStorageVersion';
 
@@ -112,9 +114,26 @@ const migrateActiveIds0to1 = (): void => {
   if (Object.keys(ids).length > 0) writeJson('activeTimetableIds', ids);
 };
 
+// --- Migration 1 → 2 --------------------------------------------------------
+// Assign `order` to existing timetables based on semester (newest first).
+// New timetables created after this migration will get their `order` from
+// the user's manual reordering or from the server state.
+
+const migrate1to2 = (): void => {
+  const timetables = readJson<SavedTimetable[]>('timetables') ?? [];
+  if (timetables.length === 0) return;
+  if (timetables.some((t) => t.order !== undefined)) return; // already migrated
+  // Sort by semester (newest first) and assign order (0 = newest)
+  const sorted = sortTimetablesBySemester(timetables);
+  for (let i = 0; i < sorted.length; i++) {
+    sorted[i].order = i;
+  }
+  writeJson('timetables', sorted);
+};
+
 // Parse the legacy 'appointmentsSemesterStore' localStorage key.
 // On main, SemesterSelector stored per-semester appointments as a LocalStorageMap
-// with format: {"map":{"dataType":"Map","value":[["\"Semester\"", [...]], ...]}}
+// with format: {"map":{"dataType":"Map","value":[["Semester", [...]], ...]}}
 const parseLegacySemesterStore = (): Map<string, AppointmentCollection[]> => {
   const result = new Map<string, AppointmentCollection[]>();
   const raw = readJson<{
@@ -141,7 +160,8 @@ const parseLegacySemesterStore = (): Map<string, AppointmentCollection[]> => {
 // --- Migration runner --------------------------------------------------------
 
 const migrations: Array<{ from: number; to: number; migrate: () => void }> = [
-  { from: 0, to: 1, migrate: migrate0to1 }
+  { from: 0, to: 1, migrate: migrate0to1 },
+  { from: 1, to: 2, migrate: migrate1to2 },
 ];
 
 export const getStorageVersion = (): number => {
