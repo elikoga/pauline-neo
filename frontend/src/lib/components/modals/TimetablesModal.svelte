@@ -153,14 +153,14 @@
     align-items: center;
     border: 1px solid #cbd5e1;
     display: grid;
-    gap: 0.75rem;
-    grid-template-columns: minmax(12rem, 1fr) auto;
-    padding: 0.75rem;
+    gap: 0.5rem;
+    grid-template-columns: minmax(10rem, 1fr) auto;
+    padding: 0.5rem;
   }
 
   li.active {
     border-color: var(--primary);
-    box-shadow: inset 0 0 0 2px var(--primary);
+    box-shadow: inset 0 0 0 1px var(--primary);
   }
 
   .details,
