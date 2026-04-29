@@ -36,7 +36,7 @@
   }
 
   $: if (browser && lastSemesterName !== $semesterNameStore) {
-    persistActiveTimetableAppointments();
+    persistActiveTimetableAppointments(lastSemesterName);
     const timetable = ensureActiveTimetable($semesterNameStore);
     replaceRealAppointments(timetable.appointments, { resetHistory: true });
     lastSemesterName = $semesterNameStore;

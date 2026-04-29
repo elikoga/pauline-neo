@@ -237,9 +237,10 @@ export const ensureActiveTimetable = (semesterName: string): SavedTimetable => {
   return created;
 };
 
-export const persistActiveTimetableAppointments = (): void => {
-  const semesterName = get(semesterNameStore);
-  const active = ensureActiveTimetable(semesterName);
+export const persistActiveTimetableAppointments = (semesterOverride?: string): void => {
+  const semesterName = semesterOverride ?? get(semesterNameStore);
+  const active = activeTimetableForSemester(semesterName);
+  if (!active) return;
   const appointments = get(realAppointments);
   savedTimetables.update((timetables) =>
     timetables.map((timetable) =>
