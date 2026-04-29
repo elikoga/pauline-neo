@@ -29,7 +29,31 @@ export const calendarExportFilename = (semesterName: string, exportedAt = new Da
   return `${prefix}-${timestamp}.ics`;
 };
 
+const berlinVtimezone = `BEGIN:VTIMEZONE
+TZID:Europe/Berlin
+TZURL:http://tzurl.org/zoneinfo-outlook/Europe/Berlin
+X-LIC-LOCATION:Europe/Berlin
+BEGIN:DAYLIGHT
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+TZNAME:CEST
+DTSTART:19700329T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+TZNAME:CET
+DTSTART:19701025T030000
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+END:VTIMEZONE`;
+
+const getBerlinVtimezone = (requestedTimezone: string): string | null =>
+  requestedTimezone === timezone ? berlinVtimezone : null;
+
 const timezone = 'Europe/Berlin';
+export const calendarTimezone = { name: timezone, generator: getBerlinVtimezone };
 
 type AppointmentSeries = {
   first: Appointment;
@@ -198,7 +222,7 @@ export const exportCalendar = derived<typeof realAppointments, () => void>(
   ($appointments) => () => {
     const calendar = icalGenerator({
       name: 'Pauline Export',
-      timezone,
+      timezone: calendarTimezone,
       events: $appointments.flatMap(appointmentCollectionEvents),
       x: [['X-PAULO-APPOINTMENTS', JSON.stringify($appointments)]]
     });
