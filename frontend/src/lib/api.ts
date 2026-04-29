@@ -260,7 +260,7 @@ export const getBaseId = (cid: string): string => cid.split('|')[0];
 
 // Attempts to find a single unambiguous replacement for a stale AppointmentCollection
 // whose CID no longer exists in the current semester's fresh data.
-// Returns the replacement, or null when there are zero or more than one candidates
+// Returns the replacement, or null when there are zero or more than one matches
 // (ambiguous — caller should keep the original and surface a broken indicator).
 export const tryReplaceStaleAppointment = async (
   stale: AppointmentCollection
@@ -270,18 +270,16 @@ export const tryReplaceStaleAppointment = async (
 
   if ('description' in stale) {
     // Full course: match by base ID AND exact course name so we can be certain.
-    const candidates = courses.filter(
-      (c) => getBaseId(c.cid) === staleBase && c.name === stale.name
-    );
-    if (candidates.length !== 1) return null; // 0 = gone, >1 = ambiguous
-    return getCourse(candidates[0].cid);
+    const matches = courses.filter((c) => getBaseId(c.cid) === staleBase && c.name === stale.name);
+    if (matches.length !== 1) return null; // 0 = gone, >1 = ambiguous
+    return getCourse(matches[0].cid);
   } else {
     // SmallGroupBackref: stale.cid is the COURSE's cid; stale.name is the group name.
     // Find courses with the same base course ID, then look for the matching group.
-    const courseCandidates = courses.filter((c) => getBaseId(c.cid) === staleBase);
+    const possibleCourses = courses.filter((c) => getBaseId(c.cid) === staleBase);
     const matches: SmallGroupBackref[] = [];
-    for (const candidate of courseCandidates) {
-      const full = await getCourse(candidate.cid);
+    for (const course of possibleCourses) {
+      const full = await getCourse(course.cid);
       const group = full.small_groups.find((g) => g.name === stale.name);
       if (group) matches.push(group as SmallGroupBackref);
     }
