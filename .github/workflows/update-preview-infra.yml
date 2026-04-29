@@ -1,5 +1,5 @@
 ---
-name: Deploy branch preview
+name: Deploy application
 
 "on":
   workflow_run:
@@ -7,21 +7,52 @@ name: Deploy branch preview
     types: [completed]
 
 jobs:
-  deploy-preview:
+  deploy-main:
     if: >
       ${{ github.event.workflow_run.conclusion == 'success'
-      && github.event.workflow_run.head_branch != 'main' }}
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_branch == 'main'
+      && github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Install SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PAULINE_PREVIEW_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 88.198.127.131 >> ~/.ssh/known_hosts
+
+      - name: Deploy main container
+        run: |
+          set -euo pipefail
+          REMOTE='pauline-deploy@88.198.127.131'
+          ssh "$REMOTE" \
+            sudo -n /run/current-system/sw/bin/pauline-preview \
+            deploy-main ghcr.io/${{ github.repository }}:latest
+
+  deploy-preview:
+    # Only deploy PRs whose source branch is in this repository. Fork PRs do not
+    # get preview deployment credentials or server access.
+    if: >
+      ${{ github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.head_repository.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
       issues: write
     steps:
+      - uses: actions/checkout@v4
       - name: Compute preview label
         id: preview
         env:
           BRANCH: ${{ github.event.workflow_run.head_branch }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           SLUG=$(echo "$BRANCH" \
@@ -31,11 +62,7 @@ jobs:
             echo "Branch '$BRANCH' produced an empty preview slug" >&2
             exit 1
           fi
-          SLUG=$(printf '%s' "$SLUG" | cut -c1-48 | sed 's/-$//')
-          SECRET=$(printf '%s:%s' "$BRANCH" "$SHA" \
-            | sha256sum \
-            | cut -c1-12)
-          LABEL="$SLUG-$SECRET"
+          LABEL=$(printf '%s' "$SLUG" | cut -c1-63 | sed 's/-$//')
           echo "label=$LABEL" >> "$GITHUB_OUTPUT"
           echo "image_tag=$SLUG" >> "$GITHUB_OUTPUT"
 
@@ -79,14 +106,8 @@ jobs:
             echo "Preview URL: $PREVIEW_URL"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          PR_NUMBER=$(gh pr list \
-            --head "$BRANCH" \
-            --state open \
-            --json number \
-            --jq '.[0].number // empty')
-          if [ -n "$PR_NUMBER" ]; then
-            gh pr comment "$PR_NUMBER" \
-              --edit-last \
-              --create-if-none \
-              --body "Pauline preview deployed: $PREVIEW_URL"
-          fi
+          gh pr comment "$BRANCH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --edit-last \
+            --create-if-none \
+            --body "Pauline preview deployed: $PREVIEW_URL"

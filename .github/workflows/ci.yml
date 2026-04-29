@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+  pull_request:
 
 jobs:
   typecheck:
@@ -34,7 +35,8 @@ jobs:
       - name: Compute branch slug
         id: slug
         run: |
-          SLUG=$(echo "${{ github.ref_name }}" \
+          REF_NAME="${{ github.head_ref || github.ref_name }}"
+          SLUG=$(echo "$REF_NAME" \
             | tr '[:upper:]' '[:lower:]' \
             | sed 's/[^a-z0-9]/-/g; s/-\+/-/g; s/^-//; s/-$//')
           echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
@@ -51,7 +53,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=${{ steps.slug.outputs.slug }}
-            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       - uses: docker/setup-buildx-action@v3
 
