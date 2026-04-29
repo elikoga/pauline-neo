@@ -19,6 +19,8 @@ jobs:
         working-directory: frontend
       - run: npm run check
         working-directory: frontend
+      - run: npm test
+        working-directory: frontend
 
   build-push:
     name: Build & push image
@@ -34,8 +36,9 @@ jobs:
 
       - name: Compute branch slug
         id: slug
+        env:
+          REF_NAME: ${{ github.head_ref || github.ref_name }}
         run: |
-          REF_NAME="${{ github.head_ref || github.ref_name }}"
           SLUG=$(echo "$REF_NAME" \
             | tr '[:upper:]' '[:lower:]' \
             | sed 's/[^a-z0-9]/-/g; s/-\+/-/g; s/^-//; s/-$//')

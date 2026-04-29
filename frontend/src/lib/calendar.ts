@@ -1,29 +1,185 @@
-import icalGenerator, { type ICalEventData } from 'ical-generator';
+import icalGenerator, {
+  ICalEventRepeatingFreq,
+  type ICalEventData,
+  type ICalRepeatingOptions
+} from 'ical-generator';
 import ical from 'ical.js';
 import { realAppointments } from './appointments';
 import { derived } from 'svelte/store';
 import { fromISO } from './fromISOcache';
+import type { Appointment, AppointmentCollection } from './api';
+
+const timezone = 'Europe/Berlin';
+
+type AppointmentSeries = {
+  first: Appointment;
+  appointments: Appointment[];
+  cancelledAppointments: Appointment[];
+  intervalWeeks: number;
+};
+
+const eventDescription = (
+  appointmentCollection: AppointmentCollection,
+  appointment: Appointment
+): string => `ID: ${appointmentCollection.cid}
+Raum: ${appointment.room}
+Name: ${appointmentCollection.name}
+Dozenten: ${appointment.instructors}
+`;
+
+const eventData = (
+  appointmentCollection: AppointmentCollection,
+  appointment: Appointment,
+  repeating?: ICalRepeatingOptions
+): ICalEventData => ({
+  start: fromISO(appointment.start_time).toJSDate(),
+  end: fromISO(appointment.end_time).toJSDate(),
+  timezone,
+  summary: `${appointmentCollection.name}`,
+  location: appointment.room,
+  description: eventDescription(appointmentCollection, appointment),
+  repeating
+});
+
+const appointmentSeriesKey = (appointment: Appointment): string => {
+  const start = fromISO(appointment.start_time);
+  const end = fromISO(appointment.end_time);
+  return [
+    start.weekday,
+    start.toFormat('HH:mm'),
+    end.toFormat('HH:mm'),
+    appointment.room,
+    appointment.instructors
+  ].join('|');
+};
+
+const daysBetween = (left: ReturnType<typeof fromISO>, right: ReturnType<typeof fromISO>): number =>
+  Math.round(right.startOf('day').diff(left.startOf('day'), 'days').days);
+
+const candidateIntervals = (appointments: Appointment[]): number[] => {
+  if (appointments.length < 2) return [1];
+
+  const starts = appointments.map((appointment) => fromISO(appointment.start_time));
+  const gaps = starts
+    .slice(1)
+    .map((start, index) => Math.max(1, Math.round(daysBetween(starts[index], start) / 7)));
+
+  return [2, 1].filter((interval) => gaps.some((gap) => gap % interval === 0));
+};
+
+const buildSeriesFromGroup = (appointments: Appointment[]): AppointmentSeries[] => {
+  const sorted = [...appointments].sort(
+    (a, b) => fromISO(a.start_time).toMillis() - fromISO(b.start_time).toMillis()
+  );
+  const unused = new Set(sorted);
+  const series: AppointmentSeries[] = [];
+
+  for (const first of sorted) {
+    if (!unused.has(first)) continue;
+
+    const remaining = sorted.filter((appointment) => unused.has(appointment));
+    let bestSeries: AppointmentSeries | undefined;
+
+    for (const intervalWeeks of candidateIntervals(remaining)) {
+      const current = [first];
+      const cancelledAppointments: Appointment[] = [];
+
+      let expectedStart = fromISO(first.start_time).plus({ weeks: intervalWeeks });
+      const lastStart = fromISO(remaining[remaining.length - 1].start_time);
+
+      while (expectedStart <= lastStart) {
+        const match = remaining.find(
+          (appointment) =>
+            appointment !== first &&
+            daysBetween(expectedStart, fromISO(appointment.start_time)) === 0
+        );
+
+        if (match) {
+          current.push(match);
+        } else {
+          cancelledAppointments.push({
+            ...first,
+            start_time: expectedStart.toISO()!,
+            end_time: expectedStart
+              .plus(fromISO(first.end_time).diff(fromISO(first.start_time)))
+              .toISO()!
+          });
+        }
+
+        expectedStart = expectedStart.plus({ weeks: intervalWeeks });
+      }
+
+      const candidate = {
+        first,
+        appointments: current,
+        cancelledAppointments,
+        intervalWeeks
+      };
+
+      if (
+        bestSeries === undefined ||
+        candidate.appointments.length > bestSeries.appointments.length ||
+        (candidate.appointments.length === bestSeries.appointments.length &&
+          candidate.cancelledAppointments.length < bestSeries.cancelledAppointments.length)
+      ) {
+        bestSeries = candidate;
+      }
+    }
+
+    if (!bestSeries) continue;
+
+    for (const appointment of bestSeries.appointments) {
+      unused.delete(appointment);
+    }
+    series.push(bestSeries);
+  }
+
+  return series;
+};
+
+const groupAppointmentSeries = (appointments: Appointment[]): AppointmentSeries[] => {
+  const grouped = new Map<string, Appointment[]>();
+  for (const appointment of appointments) {
+    const key = appointmentSeriesKey(appointment);
+    grouped.set(key, [...(grouped.get(key) ?? []), appointment]);
+  }
+
+  return [...grouped.values()].flatMap(buildSeriesFromGroup);
+};
+
+const repeatingForSeries = (series: AppointmentSeries): ICalRepeatingOptions | undefined => {
+  if (series.appointments.length < 2) return undefined;
+
+  const repeating: ICalRepeatingOptions = {
+    freq: ICalEventRepeatingFreq.WEEKLY,
+    interval: series.intervalWeeks,
+    count: series.appointments.length + series.cancelledAppointments.length
+  };
+
+  if (series.cancelledAppointments.length > 0) {
+    repeating.exclude = series.cancelledAppointments.map((appointment) =>
+      fromISO(appointment.start_time).toJSDate()
+    );
+  }
+
+  return repeating;
+};
+
+export const appointmentCollectionEvents = (
+  appointmentCollection: AppointmentCollection
+): ICalEventData[] => {
+  return groupAppointmentSeries(appointmentCollection.appointments).map((series) =>
+    eventData(appointmentCollection, series.first, repeatingForSeries(series))
+  );
+};
 
 export const exportCalendar = derived<typeof realAppointments, () => void>(
   realAppointments,
   ($appointments) => () => {
     const calendar = icalGenerator({
       name: 'Pauline Export',
-      timezone: 'Europe/Berlin',
-      events: $appointments.flatMap((appointmentCollection): ICalEventData[] =>
-        appointmentCollection.appointments.map((appointment) => ({
-          start: fromISO(appointment.start_time).toJSDate(),
-          end: fromISO(appointment.end_time).toJSDate(),
-          timezone: 'Europe/Berlin',
-          summary: `${appointmentCollection.name}`,
-          location: appointment.room,
-          description: `ID: ${appointmentCollection.cid}
-Raum: ${appointment.room}
-Name: ${appointmentCollection.name}
-Dozenten: ${appointment.instructors}
-`
-        }))
-      ),
+      timezone,
+      events: $appointments.flatMap(appointmentCollectionEvents),
       x: [['X-PAULO-APPOINTMENTS', JSON.stringify($appointments)]]
     });
     const blob = calendar.toBlob();

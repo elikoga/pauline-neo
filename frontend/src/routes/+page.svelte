@@ -8,6 +8,7 @@
   import Modal from 'svelte-simple-modal';
   import OverviewModal from '$lib/components/modals/OverviewModal.svelte';
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
+  import ChangelogModal from '$lib/components/modals/ChangelogModal.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
   import { undo, redo, realAppointments } from '$lib/appointments';
@@ -125,6 +126,11 @@
         <div
           class="grid grid-rows-2 gap-2 md:flex md:flex-row md:flex-wrap md:justify-end md:space-x-2"
         >
+          <Button
+            on:click={() => {
+              $modalStore = ChangelogModal;
+            }}>Neu: Serientermine im Kalender-Export</Button
+          >
           <Button
             on:click={() => {
               $modalStore = OverviewModal;
