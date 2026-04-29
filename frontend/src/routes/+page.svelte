@@ -70,7 +70,10 @@
 
 <Modal
   show={$modalStore}
-  styleWindow={{ backgroundColor: 'var(--background) !important' }}
+  styleWindow={{
+    backgroundColor: 'var(--background) !important',
+    width: 'min(56rem, calc(100vw - 4rem))'
+  }}
   classWindow="p-5"
   styleCloseButton={{ backgroundColor: 'var(--primary) !important' }}
 />
