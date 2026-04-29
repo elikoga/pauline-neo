@@ -5,9 +5,29 @@ import icalGenerator, {
 } from 'ical-generator';
 import ical from 'ical.js';
 import { realAppointments } from './appointments';
-import { derived } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { fromISO } from './fromISOcache';
-import type { Appointment, AppointmentCollection } from './api';
+import { semesterNameStore, type Appointment, type AppointmentCollection } from './api';
+
+export const calendarExportFilename = (semesterName: string, exportedAt = new Date()): string => {
+  const semesterSlug = semesterName
+    .trim()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  const pad = (value: number): string => value.toString().padStart(2, '0');
+  const timestamp =
+    [exportedAt.getFullYear(), pad(exportedAt.getMonth() + 1), pad(exportedAt.getDate())].join(
+      '-'
+    ) +
+    '-' +
+    [pad(exportedAt.getHours()), pad(exportedAt.getMinutes())].join('-');
+  const prefix = semesterSlug ? `pauline-stundenplan-${semesterSlug}` : 'pauline-stundenplan';
+
+  return `${prefix}-${timestamp}.ics`;
+};
 
 const timezone = 'Europe/Berlin';
 
@@ -186,7 +206,7 @@ export const exportCalendar = derived<typeof realAppointments, () => void>(
     const link = window.URL.createObjectURL(blob);
     const tempLink = document.createElement('a');
     tempLink.href = link;
-    tempLink.setAttribute('download', 'pauline.ics');
+    tempLink.setAttribute('download', calendarExportFilename(get(semesterNameStore)));
     tempLink.click();
     // remove temp link
     setTimeout(() => {
