@@ -44,7 +44,7 @@
 <br />
 <h2 class="text-2xl">Mitwirkung</h2>
 <p>
-  Das Projekt ist Open-Source unter <a href="https://git.cs.uni-paderborn.de/pauline">GitLab</a> zu finden.
+  Das Projekt ist Open Source unter <a href="https://github.com/elikoga/pauline-neo/">GitHub</a> zu finden.
 </p>
 <br />
 <h2 class="text-2xl">Privatsphäre</h2>

@@ -49,7 +49,7 @@ def custom_openapi():
         description=(
             f"The project {api_settings.PROJECT_NAME} is not associated with PAUL at "
             f"Paderborn University. See the official "
-            f"<a href='https://git.cs.uni-paderborn.de/pauline'>repository</a> "
+            f"<a href='https://github.com/elikoga/pauline-neo/'>repository</a> "
             f"for more information."
         ),
         routes=app.routes,
