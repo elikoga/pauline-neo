@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { flip } from 'svelte/animate';
   import Button from '$lib/components/Button.svelte';
   import { semesterNameStore } from '$lib/api';
   import {
@@ -103,7 +104,7 @@
 
 <ul aria-label="Gespeicherte Stundenpläne">
   {#each timetables as timetable, index (timetable.id)}
-    <li class:active={timetable.id === activeTimetableId}>
+    <li class:active={timetable.id === activeTimetableId} animate:flip={{ duration: 200 }}>
       <div class="details">
         <input
           value={timetable.name}
