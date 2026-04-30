@@ -23,8 +23,14 @@
     }
   };
 
-  onMount(() => document.addEventListener('click', closeMenu));
-  onDestroy(() => document.removeEventListener('click', closeMenu));
+  onMount(() => {
+    document.addEventListener('click', closeMenu);
+  });
+  onDestroy(() => {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('click', closeMenu);
+    }
+  });
 </script>
 
 <div class={cls}>
