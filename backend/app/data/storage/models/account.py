@@ -14,6 +14,7 @@ class UserAccount(Base):
         "UserAccountSession", back_populates="account", cascade="all, delete-orphan"
     )
     calendar_state = Column(JSON, nullable=False, default=lambda: {"appointments": []})  # deprecated, kept for migration
+    preferences = Column(JSON, nullable=False, default=dict)
     timetables = relationship(
         "Timetable", back_populates="account", cascade="all, delete-orphan"
     )

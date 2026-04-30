@@ -12,3 +12,4 @@ from .course import (
 from .message import DetailMessage
 from .account import Account, AccountAuthChallenge, AccountAuthEmailSent, AccountAuthRequest, AccountSession, AccountVerify
 from .calendar import CalendarState, CalendarStateUpdate
+from .preferences import Preferences
