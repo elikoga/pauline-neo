@@ -17,6 +17,7 @@
   import { browser } from '$app/environment';
   import SemesterSelector from '$lib/components/SemesterSelector.svelte';
   import { ensureActiveTimetable, persistActiveTimetableAppointments } from '$lib/timetables';
+  import { sidebarAutoHide } from '$lib/preferences';
 
   const appointments = writable([]);
   setContext('appointments', appointments);
@@ -114,7 +115,7 @@
   }}
   on:mouseleave={() => {
     if (window.matchMedia('screen and (min-width: 976px)').matches) {
-      if (!sidebarLocked) {
+      if (!sidebarLocked && $sidebarAutoHide) {
         sidebarOpen = false;
       }
     }

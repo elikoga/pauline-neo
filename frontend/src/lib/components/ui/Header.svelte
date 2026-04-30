@@ -6,6 +6,7 @@
   import TimetablesModal from '../modals/TimetablesModal.svelte';
   import { canRedo, canUndo, redo, undo } from '$lib/appointments';
   import { authState, logoutAccount } from '$lib/auth';
+  import { sidebarAutoHide } from '$lib/preferences';
   import { onMount, onDestroy } from 'svelte';
 
   export let sidebarOpen: boolean;
@@ -92,6 +93,11 @@
             >
               Stundenpläne
             </button>
+            <label class="dropdown-toggle">
+              <span>Sidebar verbergen erlauben</span>
+              <input type="checkbox" bind:checked={$sidebarAutoHide} />
+              <span class="toggle-slider"></span>
+            </label>
             <button
               type="button"
               class="dropdown-item dropdown-item-danger"
@@ -258,5 +264,53 @@
   .question-circle:hover {
     cursor: pointer;
     transform: scale(1.1);
+  }
+
+  .dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .dropdown-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  .dropdown-toggle input[type="checkbox"] {
+    display: none;
+  }
+
+  .toggle-slider {
+    position: relative;
+    width: 2rem;
+    height: 1.1rem;
+    background: #cbd5e1;
+    border-radius: 0.55rem;
+    transition: background 0.15s ease-in-out;
+    flex-shrink: 0;
+  }
+
+  .toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 0.1rem;
+    left: 0.1rem;
+    width: 0.9rem;
+    height: 0.9rem;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.15s ease-in-out;
+  }
+
+  .dropdown-toggle input:checked + .toggle-slider {
+    background: var(--primary);
+  }
+
+  .dropdown-toggle input:checked + .toggle-slider::after {
+    transform: translateX(0.9rem);
   }
 </style>
