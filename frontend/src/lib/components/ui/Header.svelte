@@ -145,7 +145,7 @@
     flex-shrink: 0;
     margin-left: auto;
     gap: 0.25rem;
-    overflow: hidden;
+    overflow: visible;
   }
 
 
