@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import { modalStore } from '$lib/modal';
+  import AuthModal from './AuthModal.svelte';
   import TimetablesModal from './TimetablesModal.svelte';
   import { authState, logoutAccount } from '$lib/auth';
   import { sidebarAutoHide } from '$lib/preferences';
@@ -24,6 +25,8 @@
   <Button on:click={() => { $modalStore = TimetablesModal; }}>Stundenpläne</Button>
   {#if $authState.account}
     <Button on:click={() => { logoutAccount(); }}>Abmelden</Button>
+  {:else}
+    <Button on:click={() => { $modalStore = AuthModal; }}>Anmelden</Button>
   {/if}
 </div>
 
