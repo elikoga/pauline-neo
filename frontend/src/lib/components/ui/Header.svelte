@@ -2,36 +2,15 @@
   import Hamburger from '$lib/components/ui/Hamburger.svelte';
   import { modalStore } from '$lib/modal';
   import InfoModal from '../modals/InfoModal.svelte';
-  import AuthModal from '../modals/AuthModal.svelte';
-  import TimetablesModal from '../modals/TimetablesModal.svelte';
+  import UserMenuModal from '../modals/UserMenuModal.svelte';
   import { canRedo, canUndo, redo, undo } from '$lib/appointments';
-  import { authState, logoutAccount } from '$lib/auth';
-  import { sidebarAutoHide } from '$lib/preferences';
-  import { onMount, onDestroy } from 'svelte';
+  import { authState } from '$lib/auth';
 
   export let sidebarOpen: boolean;
   export let sidebarLocked: boolean;
 
   let cls = '';
-  let menuOpen = false;
-  let menuEl: HTMLElement;
-
   export { cls as class };
-
-  const closeMenu = (e: MouseEvent) => {
-    if (menuEl && !menuEl.contains(e.target as Node)) {
-      menuOpen = false;
-    }
-  };
-
-  onMount(() => {
-    document.addEventListener('click', closeMenu);
-  });
-  onDestroy(() => {
-    if (typeof document !== 'undefined') {
-      document.removeEventListener('click', closeMenu);
-    }
-  });
 </script>
 
 <div class={cls}>
@@ -71,43 +50,17 @@
           <span class="history-label">Wiederherstellen</span>
         </button>
       </div>
-      <div class="app-menu" bind:this={menuEl}>
-        <button
-          type="button"
-          class="menu-icon-button"
-          on:click={() => ($authState.account ? (menuOpen = !menuOpen) : ($modalStore = AuthModal))}
-          aria-label={$authState.account ? 'Menü' : 'Anmelden'}
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-        </button>
-        {#if menuOpen && $authState.account}
-          <div class="menu-dropdown">
-            <div class="dropdown-email">{$authState.account.email}</div>
-            <button
-              type="button"
-              class="dropdown-item"
-              on:click={() => { menuOpen = false; $modalStore = TimetablesModal; }}
-            >
-              Stundenpläne
-            </button>
-            <label class="dropdown-toggle">
-              <span>Sidebar verbergen erlauben</span>
-              <input type="checkbox" bind:checked={$sidebarAutoHide} />
-              <span class="toggle-slider"></span>
-            </label>
-            <button
-              type="button"
-              class="dropdown-item dropdown-item-danger"
-              on:click={() => { menuOpen = false; logoutAccount(); }}
-            >
-              Abmelden
-            </button>
-          </div>
-        {/if}
-      </div>
+      <button
+        type="button"
+        class="menu-icon-button"
+        on:click={() => ($modalStore = UserMenuModal)}
+        aria-label="Menü"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </button>
       <button
         type="button"
         class="question-circle bar-content rounded-full border-2"
@@ -187,9 +140,6 @@
     }
   }
 
-  .app-menu {
-    position: relative;
-  }
 
   .menu-icon-button {
     display: flex;
@@ -209,48 +159,6 @@
     background-color: rgba(255, 255, 255, 0.12);
   }
 
-  .menu-dropdown {
-    position: absolute;
-    top: calc(100% + 0.25rem);
-    right: 0;
-    min-width: 14rem;
-    background: var(--background);
-    border: 1px solid var(--secondary);
-    border-radius: 0.375rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 50;
-    overflow: hidden;
-  }
-
-  .dropdown-email {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-    color: #64748b;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--secondary);
-  }
-
-  .dropdown-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-    color: var(--text);
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-
-  .dropdown-item:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  .dropdown-item-danger {
-    color: #dc2626;
-  }
 
   .question-circle {
     width: calc(var(--header-height) - 0.5rem);
@@ -266,51 +174,4 @@
     transform: scale(1.1);
   }
 
-  .dropdown-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-    color: var(--text);
-    cursor: pointer;
-  }
-
-  .dropdown-toggle:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  .dropdown-toggle input[type="checkbox"] {
-    display: none;
-  }
-
-  .toggle-slider {
-    position: relative;
-    width: 2rem;
-    height: 1.1rem;
-    background: #cbd5e1;
-    border-radius: 0.55rem;
-    transition: background 0.15s ease-in-out;
-    flex-shrink: 0;
-  }
-
-  .toggle-slider::after {
-    content: '';
-    position: absolute;
-    top: 0.1rem;
-    left: 0.1rem;
-    width: 0.9rem;
-    height: 0.9rem;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.15s ease-in-out;
-  }
-
-  .dropdown-toggle input:checked + .toggle-slider {
-    background: var(--primary);
-  }
-
-  .dropdown-toggle input:checked + .toggle-slider::after {
-    transform: translateX(0.9rem);
-  }
 </style>

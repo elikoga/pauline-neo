@@ -9,7 +9,7 @@ export type AppPreferences = {
 };
 
 const defaultPreferences: AppPreferences = {
-  sidebarAutoHide: true
+  sidebarAutoHide: false
 };
 
 // --- Server sync -----------------------------------------------------------
@@ -57,9 +57,9 @@ export const savePreferencesToServer = async (prefs: AppPreferences): Promise<vo
 
 // --- Stores ----------------------------------------------------------------
 
-const storedSidebarAutoHide = writableLocalStorageStore<boolean>('pref:sidebarAutoHide', 100, true);
+const storedSidebarAutoHide = writableLocalStorageStore<boolean>('pref:sidebarAutoHide', 100, false);
 
-export const sidebarAutoHide = browser ? storedSidebarAutoHide : writable<boolean>(true);
+export const sidebarAutoHide = browser ? storedSidebarAutoHide : writable<boolean>(false);
 
 // --- Server reconciliation on login ----------------------------------------
 

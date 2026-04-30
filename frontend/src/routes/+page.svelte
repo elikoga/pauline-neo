@@ -106,7 +106,7 @@
 />
 
 <aside
-  class="search fixed w-full lg:w-1/4 shadow-2xl {sidebarOpen ? 'sidebarOpen' : ''} {!$sidebarAutoHide ? 'always-open' : ''}"
+  class="search fixed w-full lg:w-1/4 shadow-2xl {sidebarOpen ? 'sidebarOpen' : ''} {$sidebarAutoHide ? 'no-peek' : ''}"
   style="--scroll-y: {scrollY}px"
   on:mouseenter={() => {
     if (window.matchMedia('screen and (min-width: 976px)').matches) {
@@ -129,7 +129,7 @@
 <div class="flex flex-col min-h-screen">
   <Header bind:sidebarOpen bind:sidebarLocked class="shrink-0 w-full z-40 drop-shadow-md" />
   <div class="flex gap-6 flex-row relative">
-    <div class="timetable w-full m-2 {!$sidebarAutoHide ? 'no-sidebar-gap' : ''}">
+    <div class="timetable w-full m-2 {$sidebarAutoHide ? 'no-sidebar-gap' : ''}">
       <div class="timetableheader grid grid-cols-2 gap-3">
         <div class="toolbar-group">
           <Button
@@ -187,12 +187,15 @@
     /* aside:hover {
       left: 0;
     } */
+    aside.no-peek {
+      left: -100%;
+    }
+    aside.sidebarOpen {
+      left: 0;
+    }
     .timetable {
       margin-left: calc(5rem + 0.5rem);
       max-width: calc(100% - (0.5rem + (5rem + 0.5rem)));
-    }
-    aside.always-open {
-      left: 0;
     }
     .timetable.no-sidebar-gap {
       margin-left: 0;
