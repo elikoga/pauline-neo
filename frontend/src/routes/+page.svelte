@@ -79,6 +79,8 @@
   styleWindow={{ backgroundColor: 'var(--background) !important' }}
   classWindow="p-5"
   styleCloseButton={{ backgroundColor: 'var(--primary) !important' }}
+  transitionBgProps={{ duration: 50 }}
+  transitionWindowProps={{ duration: 50 }}
 />
 <!-- we want the container to fill the screen horizontally -->
 <!-- we want some padding so this isn't disgusting on the eyes -->
@@ -167,7 +169,7 @@
 <style>
   aside {
     left: -100%;
-    transition: left 0.3s ease-in-out;
+    transition: left 0.15s ease-in-out;
     height: calc(100% - (max(var(--header-height) - var(--scroll-y), 0px)));
     top: calc(max(var(--header-height) - var(--scroll-y), 0px));
     z-index: 1;
