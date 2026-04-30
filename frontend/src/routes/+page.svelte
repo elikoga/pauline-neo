@@ -198,7 +198,6 @@
       max-width: calc(100% - (0.5rem + (5rem + 0.5rem)));
     }
     .timetable.no-sidebar-gap {
-      margin-left: 0;
       max-width: calc(100% - 1rem);
     }
   }

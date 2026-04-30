@@ -1,10 +1,23 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import Button from '$lib/components/Button.svelte';
   import { modalStore } from '$lib/modal';
   import AuthModal from './AuthModal.svelte';
   import TimetablesModal from './TimetablesModal.svelte';
   import { authState, logoutAccount } from '$lib/auth';
   import { sidebarAutoHide } from '$lib/preferences';
+
+  const { close } = getContext<{ close: () => void }>('simple-modal');
+
+  const openTimetables = () => {
+    close();
+    setTimeout(() => { $modalStore = TimetablesModal; }, 150);
+  };
+
+  const openLogin = () => {
+    close();
+    setTimeout(() => { $modalStore = AuthModal; }, 150);
+  };
 </script>
 
 <h1 class="text-3xl">Menü</h1>
@@ -22,11 +35,11 @@
 </div>
 
 <div class="actions">
-  <Button on:click={() => { $modalStore = TimetablesModal; }}>Stundenpläne</Button>
+  <Button on:click={openTimetables}>Stundenpläne</Button>
   {#if $authState.account}
     <Button on:click={() => { logoutAccount(); }}>Abmelden</Button>
   {:else}
-    <Button on:click={() => { $modalStore = AuthModal; }}>Anmelden</Button>
+    <Button on:click={openLogin}>Anmelden</Button>
   {/if}
 </div>
 
