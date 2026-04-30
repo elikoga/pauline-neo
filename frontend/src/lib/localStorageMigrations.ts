@@ -139,12 +139,11 @@ const migrate1to2 = (): void => {
 const migrate2to3 = (): void => {
   const timetables = readJson<SavedTimetable[]>('timetables') ?? [];
   if (timetables.length === 0) return;
-  if (timetables.every((t) => t.order !== undefined)) return;
-  let maxOrder = Math.max(-1, ...timetables.filter((t) => t.order !== undefined).map((t) => t.order!));
-  for (const t of timetables) {
-    if (t.order === undefined) {
-      t.order = ++maxOrder;
-    }
+  const candidates = timetables.filter((t) => !t.deleted && t.order === undefined);
+  if (candidates.length === 0) return;
+  let maxOrder = Math.max(-1, ...timetables.filter((t) => !t.deleted && t.order !== undefined).map((t) => t.order!));
+  for (const t of candidates) {
+    t.order = ++maxOrder;
   }
   writeJson('timetables', timetables);
 };
