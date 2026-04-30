@@ -10,7 +10,7 @@
 <div class="datespan">
   <!-- left button -->
   <button
-    class="button bg-primary fill-white hover:brightness-75"
+    class="button hover:bg-black/5"
     on:click={updateDate(-7)}
     aria-label="Vorherige Woche"
   >
@@ -34,7 +34,7 @@
   </span>
   <!-- right button -->
   <button
-    class="button bg-primary fill-white hover:brightness-75"
+    class="button hover:bg-black/5"
     on:click={updateDate(7)}
     aria-label="Nächste Woche"
   >
@@ -71,5 +71,10 @@
   .datespan button svg {
     width: 2rem;
     height: 2rem;
+    fill: #6b7280;
+  }
+
+  .datespan button:hover svg {
+    fill: #374151;
   }
 </style>
