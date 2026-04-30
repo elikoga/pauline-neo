@@ -3,15 +3,28 @@
   import { modalStore } from '$lib/modal';
   import InfoModal from '../modals/InfoModal.svelte';
   import AuthModal from '../modals/AuthModal.svelte';
+  import TimetablesModal from '../modals/TimetablesModal.svelte';
   import { canRedo, canUndo, redo, undo } from '$lib/appointments';
   import { authState, logoutAccount } from '$lib/auth';
+  import { onMount, onDestroy } from 'svelte';
 
   export let sidebarOpen: boolean;
   export let sidebarLocked: boolean;
 
   let cls = '';
+  let menuOpen = false;
+  let menuEl: HTMLElement;
 
   export { cls as class };
+
+  const closeMenu = (e: MouseEvent) => {
+    if (menuEl && !menuEl.contains(e.target as Node)) {
+      menuOpen = false;
+    }
+  };
+
+  onMount(() => document.addEventListener('click', closeMenu));
+  onDestroy(() => document.removeEventListener('click', closeMenu));
 </script>
 
 <div class={cls}>
@@ -51,28 +64,38 @@
           <span class="history-label">Wiederherstellen</span>
         </button>
       </div>
-      {#if $authState.account}
-        <span class="account-info">
-          <span class="account-email">{$authState.account.email}</span>
-          <button
-            type="button"
-            class="account-button"
-            on:click={logoutAccount}
-            aria-label="Abmelden"
-          >
-            Abmelden
-          </button>
-        </span>
-      {:else}
+      <div class="app-menu" bind:this={menuEl}>
         <button
           type="button"
-          class="account-button"
-          on:click={() => ($modalStore = AuthModal)}
-          aria-label="Anmelden"
+          class="menu-icon-button"
+          on:click={() => ($authState.account ? (menuOpen = !menuOpen) : ($modalStore = AuthModal))}
+          aria-label={$authState.account ? 'Menü' : 'Anmelden'}
         >
-          Anmelden
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
         </button>
-      {/if}
+        {#if menuOpen && $authState.account}
+          <div class="menu-dropdown">
+            <div class="dropdown-email">{$authState.account.email}</div>
+            <button
+              type="button"
+              class="dropdown-item"
+              on:click={() => { menuOpen = false; $modalStore = TimetablesModal; }}
+            >
+              Stundenpläne
+            </button>
+            <button
+              type="button"
+              class="dropdown-item dropdown-item-danger"
+              on:click={() => { menuOpen = false; logoutAccount(); }}
+            >
+              Abmelden
+            </button>
+          </div>
+        {/if}
+      </div>
       <button
         type="button"
         class="question-circle bar-content rounded-full border-2"
@@ -146,65 +169,74 @@
     }
   }
 
-  @media screen and (max-width: 768px) {
-    .account-email {
-      display: none;
-    }
-  }
-
   @media screen and (max-width: 420px) {
     .bar-content > img {
       display: none;
     }
-
-    .account-button {
-      padding: 0.2rem 0.35rem;
-      font-size: 0.75rem;
-    }
   }
 
-  .question-circle {
-    width: calc(var(--header-height) - 0.5rem);
-    height: calc(var(--header-height) - 0.5rem);
-    margin-top: 0.25rem;
-    margin-right: 0.25rem;
-    text-align: center;
-    font-size: 1.5rem;
+  .app-menu {
+    position: relative;
   }
 
-
-  .question-circle:hover {
-    cursor: pointer;
-    transform: scale(1.1);
-  }
-
-  .account-info {
+  .menu-icon-button {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    color: white;
-    font-size: 0.8rem;
-  }
-
-  .account-email {
-    max-width: 10rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .account-button {
+    justify-content: center;
+    width: calc(var(--header-height) - 0.5rem);
+    height: calc(var(--header-height) - 0.5rem);
     color: white;
     border: 1px solid var(--secondary);
     border-radius: 0.25rem;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.8rem;
+    background: none;
     cursor: pointer;
-    white-space: nowrap;
-    min-height: calc(var(--header-height) - 1rem);
+    padding: 0;
   }
 
-  .account-button:hover {
+  .menu-icon-button:hover {
     background-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .menu-dropdown {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    right: 0;
+    min-width: 14rem;
+    background: var(--background);
+    border: 1px solid var(--secondary);
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 50;
+    overflow: hidden;
+  }
+
+  .dropdown-email {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--secondary);
+  }
+
+  .dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .dropdown-item:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  .dropdown-item-danger {
+    color: #dc2626;
   }
 </style>

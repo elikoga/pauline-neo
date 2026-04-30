@@ -9,7 +9,6 @@
   import OverviewModal from '$lib/components/modals/OverviewModal.svelte';
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
   import ChangelogModal from '$lib/components/modals/ChangelogModal.svelte';
-  import TimetablesModal from '$lib/components/modals/TimetablesModal.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
   import { registerAppointmentPersistence, undo, redo, realAppointments } from '$lib/appointments';
@@ -132,11 +131,6 @@
     <div class="timetable w-full m-2">
       <div class="timetableheader grid grid-cols-2 gap-3">
         <div class="toolbar-group">
-          <Button
-            on:click={() => {
-              $modalStore = TimetablesModal;
-            }}>Stundenpläne</Button
-          >
           <Button
             on:click={() => {
               $modalStore = ChangelogModal;
