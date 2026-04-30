@@ -102,7 +102,7 @@
 <p class="save-status">Änderungen werden automatisch gespeichert.</p>
 
 <ul aria-label="Gespeicherte Stundenpläne">
-  {#each timetables as timetable (timetable.id)}
+  {#each timetables as timetable, index (timetable.id)}
     <li class:active={timetable.id === activeTimetableId}>
       <div class="details">
         <input
@@ -120,8 +120,8 @@
           {timetable.id === activeTimetableId ? 'Aktiv' : 'Öffnen'}
         </Button>
         {#if timetables.length > 1}
-          <button class="icon-btn" on:click={() => moveUp(timetable.id)} disabled={timetable.order === 0 || timetable.order === undefined} aria-label="Nach oben">↑</button>
-          <button class="icon-btn" on:click={() => moveDown(timetable.id)} disabled={timetable.order === undefined || timetable.order >= timetables.length - 1} aria-label="Nach unten">↓</button>
+          <button class="icon-btn" on:click={() => moveUp(timetable.id)} disabled={index === 0} aria-label="Nach oben">↑</button>
+          <button class="icon-btn" on:click={() => moveDown(timetable.id)} disabled={index === timetables.length - 1} aria-label="Nach unten">↓</button>
           <Button on:click={() => remove(timetable.id)}>Löschen</Button>
         {/if}
       </div>
