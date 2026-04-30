@@ -10,7 +10,7 @@
 <div class="datespan">
   <!-- left button -->
   <button
-    class="button hover:bg-black/5"
+    class="button"
     on:click={updateDate(-7)}
     aria-label="Vorherige Woche"
   >
@@ -34,7 +34,7 @@
   </span>
   <!-- right button -->
   <button
-    class="button hover:bg-black/5"
+    class="button"
     on:click={updateDate(7)}
     aria-label="Nächste Woche"
   >
@@ -66,15 +66,22 @@
     align-items: center;
     justify-content: center;
     border-radius: 0.5rem;
+    border: 1px solid var(--secondary);
+    background: transparent;
+    transition: background-color 0.15s;
   }
 
   .datespan button svg {
     width: 2rem;
     height: 2rem;
-    fill: #6b7280;
+    fill: var(--secondary);
+  }
+
+  .datespan button:hover {
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .datespan button:hover svg {
-    fill: #374151;
+    filter: brightness(1.3);
   }
 </style>
