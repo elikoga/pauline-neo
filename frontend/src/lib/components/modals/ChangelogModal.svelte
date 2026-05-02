@@ -1,4 +1,26 @@
 <h1 class="text-3xl">Neu in Pauline</h1>
+<section>
+  <h2 class="text-2xl">Konto & Stundenpläne</h2>
+  <ul>
+    <li>
+      <strong>Konten:</strong> Du kannst dich jetzt mit einer E-Mail-Adresse anmelden. Ein
+      Anmeldelink wird an deine Adresse geschickt — kein Passwort nötig.
+    </li>
+    <li>
+      <strong>Kalender speichern:</strong> Dein Stundenplan wird auf dem Server gespeichert und
+      ist so auf mehreren Geräten verfügbar.
+    </li>
+    <li>
+      <strong>Mehrere Stundenpläne:</strong> Du kannst pro Semester mehrere Stundenpläne anlegen,
+      duplizieren und zwischen ihnen wechseln.
+    </li>
+    <li>
+      <strong>Migration:</strong> Bestehende Daten aus dem Browser werden beim ersten Anmelden
+      automatisch übertragen — nichts geht verloren.
+    </li>
+  </ul>
+</section>
+
 
 <section>
   <h2 class="text-2xl">Bedienung</h2>

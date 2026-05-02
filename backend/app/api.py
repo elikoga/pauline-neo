@@ -2,7 +2,11 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+import uvicorn.logging
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -11,15 +15,31 @@ from app.config import api_settings
 from app.routes import frontend as frontend_module
 from app.routes.api_v1.api import api_router
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+# Configure root logger with uvicorn-compatible formatter before any
+# application code logs.  Matches the pattern used by thymis.
+_ch = logging.StreamHandler()
+_ch.setLevel(logging.INFO)
+_formatter = uvicorn.logging.DefaultFormatter(
+    fmt="%(levelprefix)s %(asctime)s: %(name)s: %(message)s"
 )
+_ch.setFormatter(_formatter)
+logging.basicConfig(level=logging.INFO, handlers=[_ch])
+
 logger = logging.getLogger(__name__)
+
+
+def perform_db_upgrade():
+    alembic_ini = Path(__file__).resolve().parents[1] / "alembic.ini"
+    alembic_cfg = Config(str(alembic_ini))
+    alembic_cfg.set_main_option("script_location", str(alembic_ini.parent / "alembic"))
+    logger.info("running database migrations")
+    command.upgrade(alembic_cfg, "head")
+    logger.info("database migrations complete")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    perform_db_upgrade()
     logger.info("starting frontend")
     await frontend_module.frontend.run()
     logger.info("frontend ready at %s", api_settings.BASE_URL)

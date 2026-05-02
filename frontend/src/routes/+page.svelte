@@ -9,16 +9,22 @@
   import OverviewModal from '$lib/components/modals/OverviewModal.svelte';
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
   import ChangelogModal from '$lib/components/modals/ChangelogModal.svelte';
+  import TimetablesModal from '$lib/components/modals/TimetablesModal.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
-  import { undo, redo, realAppointments } from '$lib/appointments';
-  import { cacheVersion, tryAutoReplaceAppointments } from '$lib/api';
+  import { registerAppointmentPersistence, undo, redo, realAppointments } from '$lib/appointments';
+  import { cacheVersion, semesterNameStore, tryAutoReplaceAppointments } from '$lib/api';
   import type { AppointmentCollection } from '$lib/api';
   import { browser } from '$app/environment';
   import SemesterSelector from '$lib/components/SemesterSelector.svelte';
+  import { ensureActiveTimetable, persistActiveTimetableAppointments } from '$lib/timetables';
 
   const appointments = writable([]);
   setContext('appointments', appointments);
+  if (browser) {
+    ensureActiveTimetable(get(semesterNameStore));
+    registerAppointmentPersistence(persistActiveTimetableAppointments);
+  }
 
   // Heal stale appointments (CID changed due to scraper hash updates) by finding
   // the unambiguous replacement.  Runs once on mount (to fix data from localStorage)
@@ -70,12 +76,11 @@
 
 <Modal
   show={$modalStore}
-  styleWindow={{
-    backgroundColor: 'var(--background) !important',
-    width: 'min(56rem, calc(100vw - 4rem))'
-  }}
+  styleWindow={{ backgroundColor: 'var(--background) !important', width: 'min(56rem, calc(100vw - 4rem))' }}
   classWindow="p-5"
   styleCloseButton={{ backgroundColor: 'var(--primary) !important' }}
+  transitionBgProps={{ duration: 100 }}
+  transitionWindowProps={{ duration: 100 }}
 />
 <!-- we want the container to fill the screen horizontally -->
 <!-- we want some padding so this isn't disgusting on the eyes -->
@@ -129,6 +134,11 @@
         <div class="toolbar-group">
           <Button
             on:click={() => {
+              $modalStore = TimetablesModal;
+            }}>Stundenpläne</Button
+          >
+          <Button
+            on:click={() => {
               $modalStore = ChangelogModal;
             }}>Neu in Pauline</Button
           >
@@ -159,7 +169,7 @@
 <style>
   aside {
     left: -100%;
-    transition: left 0.3s ease-in-out;
+    transition: left 0.2s ease-in-out;
     height: calc(100% - (max(var(--header-height) - var(--scroll-y), 0px)));
     top: calc(max(var(--header-height) - var(--scroll-y), 0px));
     z-index: 1;

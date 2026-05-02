@@ -3,9 +3,11 @@
   const dispatch = createEventDispatcher();
   let cls = '';
   export { cls as class };
+  export let type: 'button' | 'submit' | 'reset' = 'button';
+  export let disabled: boolean = false;
 </script>
 
-<button type="button" class={cls} on:click={(evt) => dispatch('click', evt)}>
+<button {type} {disabled} class={cls} on:click={(evt) => dispatch('click', evt)}>
   <span><slot>Click me!</slot></span>
 </button>
 
