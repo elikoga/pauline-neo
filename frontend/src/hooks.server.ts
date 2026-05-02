@@ -1,4 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 
 const DEFAULT_SCRIPT = `<!-- Matomo -->
 <script>
@@ -22,7 +23,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.includes('text/html')) return response;
 
-  const custom = process.env.CUSTOM_SCRIPT || '';
+  const custom = env.CUSTOM_SCRIPT || '';
   const html = await response.text();
   const injection = custom ? DEFAULT_SCRIPT + '\n' + custom : DEFAULT_SCRIPT;
   const modified = html.replace('</head>', injection + '\n</head>');
