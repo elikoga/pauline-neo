@@ -49,6 +49,6 @@ EXPOSE 8000
 # Single worker: the frontend subprocess manager is a module-level singleton
 # and cannot be shared across forked worker processes.
 # --proxy-headers: trust X-Forwarded-Proto/Host from nginx upstream.
-CMD ["uv", "run", "uvicorn", "app.api:app", \
+CMD ["/app/backend/.venv/bin/uvicorn", "app.api:app", \
      "--host", "0.0.0.0", "--port", "8000", \
      "--workers", "1", "--proxy-headers", "--forwarded-allow-ips=*"]
