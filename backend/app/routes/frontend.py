@@ -73,6 +73,7 @@ def _subprocess_env() -> dict[str, str]:
     - ORIGIN           — required by adapter-node for CSRF / cookie domain checks.
     - VITE_PAULINE_API — the API base path seen by the browser; always /api/v1
                          because the browser talks to FastAPI on the same origin.
+    - CUSTOM_SCRIPT    — optional; injected into <head> by hooks.server.ts if set.
     """
     host, port = _detect_host_port()
     return {
@@ -80,6 +81,7 @@ def _subprocess_env() -> dict[str, str]:
         "PRIVATE_BASE_URL": f"http://{host}:{port}",
         "ORIGIN": api_settings.BASE_URL,
         "VITE_PAULINE_API": "/api/v1",
+        **({"CUSTOM_SCRIPT": os.environ["CUSTOM_SCRIPT"]} if "CUSTOM_SCRIPT" in os.environ else {}),
     }
 
 
