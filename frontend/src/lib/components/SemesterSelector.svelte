@@ -3,10 +3,9 @@
 
   import { getSemesters, semesterNameStore, type SemesterWithoutCoursesButId } from '$lib/api';
   import { replaceRealAppointments, realAppointments, startDate } from '$lib/appointments';
-  import { fromISO } from '$lib/fromISOcache';
+  import { semesterStartDates } from '$lib/semesterDates';
   import { ensureActiveTimetable } from '$lib/timetables';
   import { get } from 'svelte/store';
-  import type { DateTime } from 'luxon';
   import { onMount } from 'svelte';
 
   let avaliableSemesters: SemesterWithoutCoursesButId[] = [];
@@ -17,20 +16,9 @@
 
   let lastSemesterName = $semesterNameStore;
 
-  const startDates: Map<string, DateTime> = new Map([
-    ['Sommer 2022', fromISO('2022-04-25T07:00')],
-    ['Winter 2022/23', fromISO('2022-10-17T07:00')],
-    ['Sommer 2023', fromISO('2023-04-17T07:00')],
-    ['Winter 2023/24', fromISO('2023-10-09T07:00')],
-    ['Sommer 2024', fromISO('2024-04-08T07:00')],
-    ['Winter 2024/25', fromISO('2024-10-14T07:00')],
-    ['Sommer 2025', fromISO('2025-04-07T07:00')],
-    ['Winter 2025/26', fromISO('2025-10-13T07:00')],
-    ['Sommer 2026', fromISO('2026-04-13T07:00')]
-  ]);
 
   $: if (browser) {
-    const date = startDates.get($semesterNameStore);
+    const date = semesterStartDates.get($semesterNameStore);
     if (date) {
       $startDate = date;
     }
