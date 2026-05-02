@@ -30,5 +30,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   const headers = new Headers(response.headers);
   headers.delete('content-length');
+  headers.set('x-debug-custom-script', custom ? 'SET-' + custom.length : 'EMPTY');
   return new Response(modified, { status: response.status, headers });
 };
