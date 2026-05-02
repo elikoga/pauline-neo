@@ -2,15 +2,14 @@
   import Hamburger from '$lib/components/ui/Hamburger.svelte';
   import { modalStore } from '$lib/modal';
   import InfoModal from '../modals/InfoModal.svelte';
-  import AuthModal from '../modals/AuthModal.svelte';
+  import UserMenuModal from '../modals/UserMenuModal.svelte';
   import { canRedo, canUndo, redo, undo } from '$lib/appointments';
-  import { authState, logoutAccount } from '$lib/auth';
+  import { authState } from '$lib/auth';
 
   export let sidebarOpen: boolean;
   export let sidebarLocked: boolean;
 
   let cls = '';
-
   export { cls as class };
 </script>
 
@@ -51,28 +50,17 @@
           <span class="history-label">Wiederherstellen</span>
         </button>
       </div>
-      {#if $authState.account}
-        <span class="account-info">
-          <span class="account-email">{$authState.account.email}</span>
-          <button
-            type="button"
-            class="account-button"
-            on:click={logoutAccount}
-            aria-label="Abmelden"
-          >
-            Abmelden
-          </button>
-        </span>
-      {:else}
-        <button
-          type="button"
-          class="account-button"
-          on:click={() => ($modalStore = AuthModal)}
-          aria-label="Anmelden"
-        >
-          Anmelden
-        </button>
-      {/if}
+      <button
+        type="button"
+        class="menu-icon-button"
+        on:click={() => ($modalStore = UserMenuModal)}
+        aria-label="Menü"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </button>
       <button
         type="button"
         class="question-circle bar-content rounded-full border-2"
@@ -110,7 +98,7 @@
     flex-shrink: 0;
     margin-left: auto;
     gap: 0.25rem;
-    overflow: hidden;
+    overflow: visible;
   }
 
 
@@ -146,22 +134,31 @@
     }
   }
 
-  @media screen and (max-width: 768px) {
-    .account-email {
-      display: none;
-    }
-  }
-
   @media screen and (max-width: 420px) {
     .bar-content > img {
       display: none;
     }
-
-    .account-button {
-      padding: 0.2rem 0.35rem;
-      font-size: 0.75rem;
-    }
   }
+
+
+  .menu-icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--header-height) - 0.5rem);
+    height: calc(var(--header-height) - 0.5rem);
+    color: white;
+    border: 1px solid var(--secondary);
+    border-radius: 0.25rem;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .menu-icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+
 
   .question-circle {
     width: calc(var(--header-height) - 0.5rem);
@@ -172,39 +169,9 @@
     font-size: 1.5rem;
   }
 
-
   .question-circle:hover {
     cursor: pointer;
     transform: scale(1.1);
   }
 
-  .account-info {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: white;
-    font-size: 0.8rem;
-  }
-
-  .account-email {
-    max-width: 10rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .account-button {
-    color: white;
-    border: 1px solid var(--secondary);
-    border-radius: 0.25rem;
-    padding: 0.2rem 0.5rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-    white-space: nowrap;
-    min-height: calc(var(--header-height) - 1rem);
-  }
-
-  .account-button:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-  }
 </style>

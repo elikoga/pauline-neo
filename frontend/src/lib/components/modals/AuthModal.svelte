@@ -70,10 +70,14 @@
 </p>
 
 <div class="notice" class:strong={isPreferredUniMail}>
-  <strong>Empfohlen:</strong>
-  <code>benutzername@mail.uni-paderborn.de</code> oder
-  <code>benutzername@campus.uni-paderborn.de</code>.
-  Kurzformen wie <code>mail.upb.de</code> und <code>campus.upb.de</code> funktionieren auch.
+  <strong>Zum Beispiel:</strong>
+  <code>vorname.nachname@mail.uni-paderborn.de</code> oder
+  <code>vorname.nachname@campus.uni-paderborn.de</code> oder
+  <code>benutzername@mail.upb.de</code> oder
+  <code>benutzername@campus.upb.de</code> oder
+  <code>vorname.nachname@uni-paderborn.de</code> oder
+  <code>vorname.nachname@upb.de</code>.
+  Geht auch mit anderen Adressen.
 </div>
 
 

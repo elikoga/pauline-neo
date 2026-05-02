@@ -9,7 +9,6 @@
   import OverviewModal from '$lib/components/modals/OverviewModal.svelte';
   import FeedbackForm from '$lib/components/modals/FeedbackForm.svelte';
   import ChangelogModal from '$lib/components/modals/ChangelogModal.svelte';
-  import TimetablesModal from '$lib/components/modals/TimetablesModal.svelte';
   import Header from '$lib/components/ui/Header.svelte';
   import { exportCalendar, importCalendar } from '$lib/calendar';
   import { registerAppointmentPersistence, undo, redo, realAppointments } from '$lib/appointments';
@@ -18,6 +17,7 @@
   import { browser } from '$app/environment';
   import SemesterSelector from '$lib/components/SemesterSelector.svelte';
   import { ensureActiveTimetable, persistActiveTimetableAppointments } from '$lib/timetables';
+  import { sidebarAutoHide } from '$lib/preferences';
 
   const appointments = writable([]);
   setContext('appointments', appointments);
@@ -106,7 +106,7 @@
 />
 
 <aside
-  class="search fixed w-full lg:w-1/4 shadow-2xl {sidebarOpen ? 'sidebarOpen' : ''}"
+  class="search fixed w-full lg:w-1/4 shadow-2xl {sidebarOpen ? 'sidebarOpen' : ''} {$sidebarAutoHide ? 'no-peek' : ''}"
   style="--scroll-y: {scrollY}px"
   on:mouseenter={() => {
     if (window.matchMedia('screen and (min-width: 976px)').matches) {
@@ -115,7 +115,7 @@
   }}
   on:mouseleave={() => {
     if (window.matchMedia('screen and (min-width: 976px)').matches) {
-      if (!sidebarLocked) {
+      if (!sidebarLocked && $sidebarAutoHide) {
         sidebarOpen = false;
       }
     }
@@ -129,14 +129,9 @@
 <div class="flex flex-col min-h-screen">
   <Header bind:sidebarOpen bind:sidebarLocked class="shrink-0 w-full z-40 drop-shadow-md" />
   <div class="flex gap-6 flex-row relative">
-    <div class="timetable w-full m-2">
+    <div class="timetable w-full m-2 {$sidebarAutoHide ? 'no-sidebar-gap' : ''}">
       <div class="timetableheader grid grid-cols-2 gap-3">
         <div class="toolbar-group">
-          <Button
-            on:click={() => {
-              $modalStore = TimetablesModal;
-            }}>Stundenpläne</Button
-          >
           <Button
             on:click={() => {
               $modalStore = ChangelogModal;
@@ -192,9 +187,19 @@
     /* aside:hover {
       left: 0;
     } */
+    aside.no-peek {
+      left: -100%;
+    }
+    aside.sidebarOpen {
+      left: 0;
+    }
     .timetable {
       margin-left: calc(5rem + 0.5rem);
       max-width: calc(100% - (0.5rem + (5rem + 0.5rem)));
+    }
+    .timetable.no-sidebar-gap {
+      margin-left: 0.5rem;
+      max-width: calc(100% - 1rem);
     }
   }
 
